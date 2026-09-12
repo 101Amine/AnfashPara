@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 interface ProductSeed {
+  active: boolean;
   created_at: string;
   id: string;
   name: string;
@@ -49,6 +50,10 @@ const parseProducts = (input: unknown): ProductSeed[] => {
     assertIsoDate(product.created_at, `${prefix}.created_at`);
     assertIsoDate(product.updated_at, `${prefix}.updated_at`);
 
+    if (typeof product.active !== 'boolean') {
+      throw new Error(`${prefix}.active must be a boolean`);
+    }
+
     if (
       typeof product.price_centimes !== 'number' ||
       !Number.isInteger(product.price_centimes) ||
@@ -90,6 +95,7 @@ const values = products
         product.slug,
         product.name,
         product.price_centimes,
+        product.active ? 1 : 0,
         product.created_at,
         product.updated_at,
       ]
@@ -110,7 +116,7 @@ const seedSql = `INSERT INTO settings (
   updated_at = excluded.updated_at;
 
 INSERT INTO products (
-  id, store_id, slug, name, price_centimes, created_at, updated_at
+  id, store_id, slug, name, price_centimes, active, created_at, updated_at
 ) VALUES
   ${values}
 ON CONFLICT(id) DO UPDATE SET
@@ -118,6 +124,7 @@ ON CONFLICT(id) DO UPDATE SET
   slug = excluded.slug,
   name = excluded.name,
   price_centimes = excluded.price_centimes,
+  active = excluded.active,
   updated_at = excluded.updated_at;
 `;
 

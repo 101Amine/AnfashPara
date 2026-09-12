@@ -5,6 +5,7 @@
     "slug": "vitamine-c-1000",
     "name": "Vitamine C 1000 mg",
     "price_centimes": 8900,
+    "active": true,
     "created_at": "2026-09-12T00:00:00.000Z",
     "updated_at": "2026-09-12T00:00:00.000Z"
   },
@@ -14,6 +15,7 @@
     "slug": "magnesium",
     "name": "Magnésium",
     "price_centimes": 11900,
+    "active": true,
     "created_at": "2026-09-12T00:00:00.000Z",
     "updated_at": "2026-09-12T00:00:00.000Z"
   },
@@ -23,6 +25,7 @@
     "slug": "omega-3",
     "name": "Oméga 3",
     "price_centimes": 14900,
+    "active": true,
     "created_at": "2026-09-12T00:00:00.000Z",
     "updated_at": "2026-09-12T00:00:00.000Z"
   },
@@ -32,6 +35,7 @@
     "slug": "zinc",
     "name": "Zinc",
     "price_centimes": 6900,
+    "active": true,
     "created_at": "2026-09-12T00:00:00.000Z",
     "updated_at": "2026-09-12T00:00:00.000Z"
   },
@@ -41,6 +45,7 @@
     "slug": "vitamine-d3",
     "name": "Vitamine D3",
     "price_centimes": 9900,
+    "active": true,
     "created_at": "2026-09-12T00:00:00.000Z",
     "updated_at": "2026-09-12T00:00:00.000Z"
   }

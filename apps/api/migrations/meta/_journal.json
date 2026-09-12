@@ -8,6 +8,13 @@
       "when": 1789233618992,
       "tag": "0000_lethal_jamie_braddock",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1789235053161,
+      "tag": "0001_faithful_medusa",
+      "breakpoints": true
     }
   ]
 }
