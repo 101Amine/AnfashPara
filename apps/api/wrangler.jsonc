@@ -1,0 +1,55 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "para-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-12",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "para-staging",
+      "database_id": "e781409c-4246-44c1-953c-b76d6e6da000",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": {
+    "ENVIRONMENT": "local",
+    "GIT_SHA": "uncommitted",
+  },
+  "triggers": {
+    "crons": ["0 * * * *"],
+  },
+  "env": {
+    "staging": {
+      "workers_dev": true,
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "para-staging",
+          "database_id": "e781409c-4246-44c1-953c-b76d6e6da000",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging",
+        "GIT_SHA": "uncommitted",
+      },
+      "triggers": {
+        "crons": ["* * * * *"],
+      },
+    },
+    "prod": {
+      "workers_dev": true,
+      "vars": {
+        "ENVIRONMENT": "production",
+        "GIT_SHA": "uncommitted",
+      },
+      "triggers": {
+        "crons": ["0 * * * *"],
+      },
+    },
+  },
+}

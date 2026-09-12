@@ -1,0 +1,189 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "bc8900f0-c701-4785-b8f0-9dad1709be0a",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "products": {
+      "name": "products",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "price_centimes": {
+          "name": "price_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "products_store_slug_unique": {
+          "name": "products_store_slug_unique",
+          "columns": ["store_id", "slug"],
+          "isUnique": true
+        },
+        "products_store_id_index": {
+          "name": "products_store_id_index",
+          "columns": ["store_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "products_price_centimes_non_negative": {
+          "name": "products_price_centimes_non_negative",
+          "value": "\"products\".\"price_centimes\" >= 0"
+        },
+        "products_price_centimes_integer": {
+          "name": "products_price_centimes_integer",
+          "value": "typeof(\"products\".\"price_centimes\") = 'integer'"
+        },
+        "products_created_at_iso": {
+          "name": "products_created_at_iso",
+          "value": "\"products\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "products_updated_at_iso": {
+          "name": "products_updated_at_iso",
+          "value": "\"products\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "settings": {
+      "name": "settings",
+      "columns": {
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MAD'"
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'fr-MA'"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Africa/Casablanca'"
+        },
+        "minimum_order_centimes": {
+          "name": "minimum_order_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "settings_currency_iso_4217": {
+          "name": "settings_currency_iso_4217",
+          "value": "length(\"settings\".\"currency\") = 3"
+        },
+        "settings_minimum_order_non_negative": {
+          "name": "settings_minimum_order_non_negative",
+          "value": "\"settings\".\"minimum_order_centimes\" >= 0"
+        },
+        "settings_minimum_order_integer": {
+          "name": "settings_minimum_order_integer",
+          "value": "typeof(\"settings\".\"minimum_order_centimes\") = 'integer'"
+        },
+        "settings_created_at_iso": {
+          "name": "settings_created_at_iso",
+          "value": "\"settings\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "settings_updated_at_iso": {
+          "name": "settings_updated_at_iso",
+          "value": "\"settings\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "prod-vitamin-c-1000",
+    "store_id": "para-main",
+    "slug": "vitamine-c-1000",
+    "name": "Vitamine C 1000 mg",
+    "price_centimes": 8900,
+    "created_at": "2026-09-12T00:00:00.000Z",
+    "updated_at": "2026-09-12T00:00:00.000Z"
+  },
+  {
+    "id": "prod-magnesium",
+    "store_id": "para-main",
+    "slug": "magnesium",
+    "name": "Magnésium",
+    "price_centimes": 11900,
+    "created_at": "2026-09-12T00:00:00.000Z",
+    "updated_at": "2026-09-12T00:00:00.000Z"
+  },
+  {
+    "id": "prod-omega-3",
+    "store_id": "para-main",
+    "slug": "omega-3",
+    "name": "Oméga 3",
+    "price_centimes": 14900,
+    "created_at": "2026-09-12T00:00:00.000Z",
+    "updated_at": "2026-09-12T00:00:00.000Z"
+  },
+  {
+    "id": "prod-zinc",
+    "store_id": "para-main",
+    "slug": "zinc",
+    "name": "Zinc",
+    "price_centimes": 6900,
+    "created_at": "2026-09-12T00:00:00.000Z",
+    "updated_at": "2026-09-12T00:00:00.000Z"
+  },
+  {
+    "id": "prod-vitamin-d3",
+    "store_id": "para-main",
+    "slug": "vitamine-d3",
+    "name": "Vitamine D3",
+    "price_centimes": 9900,
+    "created_at": "2026-09-12T00:00:00.000Z",
+    "updated_at": "2026-09-12T00:00:00.000Z"
+  }
+]

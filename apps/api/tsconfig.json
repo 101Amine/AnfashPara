@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2024"],
+    "types": ["./worker-configuration.d.ts", "node"]
+  },
+  "exclude": ["test"],
+  "include": ["drizzle.config.ts", "scripts/**/*.ts", "worker-configuration.d.ts", "src/**/*.ts"]
+}

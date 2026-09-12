@@ -1,0 +1,27 @@
+{
+  "name": "para",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "deploy:api:prod": "pnpm --filter @para/api deploy:prod",
+    "deploy:api:staging": "pnpm --filter @para/api deploy:staging",
+    "dev:hello": "pnpm --filter hello dev",
+    "dev:api": "pnpm --filter @para/api dev",
+    "deploy:hello": "pnpm --filter hello deploy",
+    "format": "prettier --write package.json pnpm-workspace.yaml tsconfig.json eslint.config.mjs prettier.config.mjs \".github/**/*.{yml,yaml}\" \"apps/**/*.{ts,mts,json,jsonc,md}\" \"hello/{src,test}/**/*.ts\" \"hello/*.{json,jsonc,md,mts}\" \"packages/**/*.{ts,json}\"",
+    "format:check": "prettier --check package.json pnpm-workspace.yaml tsconfig.json eslint.config.mjs prettier.config.mjs \".github/**/*.{yml,yaml}\" \"apps/**/*.{ts,mts,json,jsonc,md}\" \"hello/{src,test}/**/*.ts\" \"hello/*.{json,jsonc,md,mts}\" \"packages/**/*.{ts,json}\"",
+    "lint": "eslint apps/api/src apps/api/scripts apps/api/test hello/src hello/test packages/core/src packages/core/test && pnpm format:check",
+    "tail:api:staging": "pnpm --filter @para/api tail:staging",
+    "test": "pnpm -r --if-present run test",
+    "typecheck": "pnpm -r --if-present run typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^4.1.11"
+  }
+}

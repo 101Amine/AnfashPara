@@ -1,0 +1,5 @@
+- D1 is Cloudflare's managed serverless database and uses SQLite semantics close to the Worker.
+- SQLite uses dynamic storage classes; Postgres applies stricter column types and a larger SQL feature set.
+- D1 scales to zero and needs no database server, while Postgres normally requires a hosted server or service.
+- D1 fits this small Cloudflare-first shop; Postgres fits heavier relational workloads and broader tooling.
+- Drizzle keeps our TypeScript schema portable enough to make a future migration easier, but not automatic.

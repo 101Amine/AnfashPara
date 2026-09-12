@@ -1,0 +1,37 @@
+{
+  "name": "@para/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cf-typegen": "wrangler types --env-interface ApiBindings && pnpm --workspace-root exec prettier --write apps/api/worker-configuration.d.ts",
+    "db:count:local": "wrangler d1 execute DB --local --command=\"SELECT COUNT(*) AS count FROM products;\"",
+    "db:count:staging": "wrangler d1 execute DB --env staging --remote --command=\"SELECT COUNT(*) AS count FROM products;\"",
+    "db:generate": "drizzle-kit generate && pnpm --workspace-root exec prettier --write \"apps/api/migrations/meta/*.json\"",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:staging": "wrangler d1 migrations apply DB --env staging --remote",
+    "db:seed:local": "pnpm db:seed:prepare && wrangler d1 execute DB --local --file=.wrangler/tmp/seed-products.sql",
+    "db:seed:prepare": "tsx scripts/build-seed.ts",
+    "db:seed:staging": "pnpm db:seed:prepare && wrangler d1 execute DB --env staging --remote --file=.wrangler/tmp/seed-products.sql",
+    "db:scratch:types": "wrangler d1 execute DB --local --file=scratch/sqlite-types.sql",
+    "deploy:prod": "wrangler deploy --env prod",
+    "deploy:staging": "wrangler deploy --env staging",
+    "dev": "wrangler dev --test-scheduled",
+    "tail:staging": "wrangler tail --env staging --format pretty",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.1.8",
+    "@types/node": "^22.20.2",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11",
+    "wrangler": "^4.131.1"
+  }
+}

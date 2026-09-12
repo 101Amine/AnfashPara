@@ -1,0 +1,4 @@
+# Copy this file to `.dev.vars` for local-only overrides.
+# Never commit real secrets or production credentials.
+ENVIRONMENT=local
+GIT_SHA=uncommitted
