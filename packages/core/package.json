@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:order-state-machine:coverage": "vitest run test/orderStateMachine.test.ts --coverage.enabled --coverage.provider=v8 --coverage.include=src/orderStateMachine.ts --coverage.thresholds.branches=100 --coverage.thresholds.functions=100 --coverage.thresholds.lines=100 --coverage.thresholds.statements=100",
     "typecheck": "tsc --noEmit"
   }
 }

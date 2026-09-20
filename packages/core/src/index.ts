@@ -1,4 +1,5 @@
 export * from './money';
+export * from './orderStateMachine';
 export * from './phone';
 
 export function isNonEmptyString(value: unknown): value is string {
