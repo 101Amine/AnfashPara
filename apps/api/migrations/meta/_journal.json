@@ -15,6 +15,13 @@
       "when": 1789235053161,
       "tag": "0001_faithful_medusa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789923578595,
+      "tag": "0002_full_order_schema",
+      "breakpoints": true
     }
   ]
 }
