@@ -2,3 +2,7 @@
 # Never commit real secrets or production credentials.
 ENVIRONMENT=local
 GIT_SHA=uncommitted
+# Required by the /admin/* Cloudflare Access JWT middleware.
+# Team domain accepts either anfashpara.cloudflareaccess.com or the HTTPS URL.
+CF_ACCESS_AUD=
+CF_ACCESS_TEAM_DOMAIN=
