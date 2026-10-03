@@ -22,6 +22,13 @@
       "when": 1789923578595,
       "tag": "0002_full_order_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790995143756,
+      "tag": "0003_sparkling_iron_fist",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@ import { FakeCourierClient, courierFailure, courierSuccess } from '@para/core/te
 
 const parcelInput: CreateParcelInput = {
   codAmountCentimes: 24_500,
+  idempotencyKey: '0199a001-1000-7000-8000-000000000001',
   orderId: '0199a001-1000-7000-8000-000000000001',
   orderReference: 'PARA-101',
   productSummary: '2× Bio-Oil 125ml',

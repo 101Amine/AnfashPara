@@ -262,6 +262,10 @@ export async function renderAdminOrdersPage(
             background: #176b42;
             color: #fff;
           }
+          .action-parcel {
+            background: #1d5bbf;
+            color: #fff;
+          }
           .action-missed,
           .action-callback {
             background: #fff3d9;
@@ -398,7 +402,7 @@ export async function renderAdminOrdersPage(
                         </div>
                         <div class="amount">${formatOrderMoney(order.codAmountCentimes)}</div>
                       </div>
-                      ${renderConfirmationActions(order)}
+                      ${renderOrderActions(order)}
                     </article>`;
                   })
             }
@@ -416,9 +420,16 @@ export async function renderAdminOrdersPage(
     </html>`;
 }
 
-function renderConfirmationActions(
+function renderOrderActions(
   order: AdminOrderListItem,
 ): HtmlEscapedString | Promise<HtmlEscapedString> | string {
+  if (order.status === 'CONFIRMED') {
+    return html`<div class="actions" aria-label="Actions d'expédition">
+      <form method="post" action="${`/admin/orders/${order.id}/parcel`}">
+        <button class="action action-parcel" type="submit">Créer le colis</button>
+      </form>
+    </div>`;
+  }
   if (order.status !== 'CONFIRMING' && order.status !== 'NO_ANSWER') return '';
 
   const endpoint = `/admin/orders/${order.id}/confirmation`;

@@ -5,6 +5,10 @@ import type { MiddlewareHandler } from 'hono';
 export type AppBindings = ApiBindings & {
   CF_ACCESS_AUD?: string;
   CF_ACCESS_TEAM_DOMAIN?: string;
+  COURIER_ACCOUNT_ID?: string;
+  COURIER_API_TOKEN?: string;
+  COURIER_API_URL?: string;
+  COURIER_NAME?: string;
   ORDER_WEBHOOK_SECRET?: string;
 };
 

@@ -337,7 +337,7 @@ export const shipments = sqliteTable(
   },
   (table) => [
     uniqueIndex('shipments_store_tracking_unique').on(table.storeId, table.trackingNumber),
-    index('shipments_order_index').on(table.orderId),
+    uniqueIndex('shipments_store_order_unique').on(table.storeId, table.orderId),
     index('shipments_store_status_index').on(table.storeId, table.statusNormalized),
     check('shipments_id_uuid_v7', uuidV7Check(table.id)),
     check(
