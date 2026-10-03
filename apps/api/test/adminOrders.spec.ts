@@ -21,6 +21,7 @@ const resetDatabase = async (): Promise<void> => {
   if (!env.DB) throw new Error('The test D1 binding is missing');
 
   const statements = [
+    'DROP TABLE IF EXISTS shipments',
     'DROP TABLE IF EXISTS order_events',
     'DROP TABLE IF EXISTS orders',
     'DROP TABLE IF EXISTS customers',
@@ -48,6 +49,12 @@ const resetDatabase = async (): Promise<void> => {
       order_id TEXT NOT NULL,
       to_status TEXT NOT NULL,
       created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE shipments (
+      id TEXT PRIMARY KEY NOT NULL,
+      store_id TEXT NOT NULL,
+      order_id TEXT NOT NULL,
+      label_url TEXT
     )`,
   ];
 
@@ -89,6 +96,15 @@ const resetDatabase = async (): Promise<void> => {
       ),
     ]);
   }
+
+  await env.DB.prepare('INSERT INTO shipments VALUES (?, ?, ?, ?)')
+    .bind(
+      '0199b001-2000-7000-8000-000000000023',
+      'para-main',
+      'order-23',
+      'https://labels.example.test/PARA-SEARCH.pdf',
+    )
+    .run();
 };
 
 beforeEach(resetDatabase);
@@ -119,6 +135,9 @@ describe('GET /admin/orders', () => {
     expect(body).toContain('PARA-SEARCH');
     expect(body).toContain('+212612345678');
     expect(body).toContain('SLA · 1 h 30 min');
+    expect(body).toContain('Imprimer les étiquettes sélectionnées');
+    expect(body).toContain('name="shipmentId"');
+    expect(body).toContain('/admin/shipments/0199b001-2000-7000-8000-000000000023/label');
     expect(body).toContain('@media (max-width: 720px)');
     expect((body.match(/ selected/gu) ?? []).length).toBe(1);
     expect(body).not.toContain('PARA-22');

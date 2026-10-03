@@ -134,7 +134,7 @@
       <text x="600" y="580" class="node-title">Implemented routes</text>
       <text x="600" y="604" class="node-small">/api/health · /api/version</text>
       <text x="600" y="626" class="node-small">/api/products · /api/settings</text>
-      <text x="600" y="648" class="node-small">/admin/orders + parcel actions</text>
+      <text x="600" y="648" class="node-small">/admin/orders · parcels · labels</text>
       <text x="600" y="668" class="node-small">Signed order + courier webhooks</text>
     </g>
 
@@ -151,9 +151,15 @@
     </g>
 
     <g id="module-status-sync" data-status="implemented">
-      <rect x="880" y="617" width="260" height="58" class="node implemented"/>
-      <text x="900" y="641" class="node-title">Courier status sync</text>
-      <text x="900" y="663" class="node-copy">Signed webhook · polling fallback</text>
+      <rect x="880" y="617" width="125" height="58" class="node implemented"/>
+      <text x="892" y="641" class="node-title">Status sync</text>
+      <text x="892" y="663" class="node-small">Webhook/cron</text>
+    </g>
+
+    <g id="module-shipment-labels" data-status="implemented">
+      <rect x="1015" y="617" width="125" height="58" class="node implemented"/>
+      <text x="1027" y="641" class="node-title">Labels</text>
+      <text x="1027" y="663" class="node-small">View · batch ZIP</text>
     </g>
   </g>
 
@@ -254,7 +260,7 @@
       <rect x="1235" y="305" width="280" height="100" class="rail-node"/>
       <text x="1255" y="335" class="rail-node-title">GitHub Actions CI</text>
       <text x="1255" y="359" class="rail-copy">Frozen install · lint · typecheck</text>
-      <text x="1255" y="381" class="rail-copy">346 automated tests passing</text>
+      <text x="1255" y="381" class="rail-copy">353 automated tests passing</text>
     </g>
 
     <path d="M1375 405 L1375 445" class="rail-flow"/>
