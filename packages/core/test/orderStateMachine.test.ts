@@ -114,6 +114,14 @@ describe('transition', () => {
     });
   });
 
+  it('allows a customer to confirm after an earlier missed contact', () => {
+    expect(
+      transition(orderAt('NO_ANSWER', 1), 'CONFIRMED', {
+        actor: 'user:operator@example.com',
+      }).next.status,
+    ).toBe('CONFIRMED');
+  });
+
   it.each([
     ['courier:amana', 'DELIVERED'],
     ['courier:amana', 'REFUSED'],

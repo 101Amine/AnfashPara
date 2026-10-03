@@ -3,9 +3,10 @@ import { html } from 'hono/html';
 import type { HtmlEscapedString } from 'hono/utils/html';
 
 import { ORDER_STATUSES } from '../../db/schema';
-import type { AdminOrdersPage } from './adminOrders.repository';
+import type { AdminOrderListItem, AdminOrdersPage } from './adminOrders.repository';
 import type { AdminOrdersQuery } from './adminOrders.schema';
 import {
+  buildWhatsAppConfirmationUrl,
   formatOrderDate,
   formatOrderMoney,
   formatSlaAge,
@@ -234,6 +235,47 @@ export async function renderAdminOrdersPage(
           .next {
             min-width: 160px;
           }
+          .actions {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid #edf1ee;
+          }
+          .actions form {
+            margin: 0;
+          }
+          .action,
+          .whatsapp {
+            min-height: 40px;
+            border-radius: 9px;
+            padding: 0 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 800;
+            text-decoration: none;
+          }
+          .action-confirm {
+            background: #176b42;
+            color: #fff;
+          }
+          .action-missed,
+          .action-callback {
+            background: #fff3d9;
+            color: #76500a;
+          }
+          .action-cancel {
+            background: #fde8e7;
+            color: #9b302c;
+          }
+          .whatsapp {
+            margin-left: auto;
+            background: #e0f7e9;
+            color: #126b3d;
+          }
           @media (max-width: 720px) {
             .shell {
               padding: 16px 12px 40px;
@@ -273,6 +315,15 @@ export async function renderAdminOrdersPage(
             }
             .next {
               width: 100%;
+            }
+            .actions,
+            .actions form,
+            .action,
+            .whatsapp {
+              width: 100%;
+            }
+            .whatsapp {
+              margin-left: 0;
             }
           }
         </style>
@@ -347,6 +398,7 @@ export async function renderAdminOrdersPage(
                         </div>
                         <div class="amount">${formatOrderMoney(order.codAmountCentimes)}</div>
                       </div>
+                      ${renderConfirmationActions(order)}
                     </article>`;
                   })
             }
@@ -362,6 +414,43 @@ export async function renderAdminOrdersPage(
         </main>
       </body>
     </html>`;
+}
+
+function renderConfirmationActions(
+  order: AdminOrderListItem,
+): HtmlEscapedString | Promise<HtmlEscapedString> | string {
+  if (order.status !== 'CONFIRMING' && order.status !== 'NO_ANSWER') return '';
+
+  const endpoint = `/admin/orders/${order.id}/confirmation`;
+  return html`<div class="actions" aria-label="Actions de confirmation">
+    <form method="post" action="${endpoint}">
+      <input type="hidden" name="action" value="confirmed" />
+      <input type="hidden" name="channel" value="call" />
+      <button class="action action-confirm" type="submit">Confirmé</button>
+    </form>
+    <form method="post" action="${endpoint}">
+      <input type="hidden" name="action" value="no_answer" />
+      <input type="hidden" name="channel" value="call" />
+      <button class="action action-missed" type="submit">Pas de réponse</button>
+    </form>
+    <form method="post" action="${endpoint}">
+      <input type="hidden" name="action" value="cancelled" />
+      <input type="hidden" name="channel" value="call" />
+      <button class="action action-cancel" type="submit">Annulé</button>
+    </form>
+    <form method="post" action="${endpoint}">
+      <input type="hidden" name="action" value="callback" />
+      <input type="hidden" name="channel" value="call" />
+      <button class="action action-callback" type="submit">Rappeler</button>
+    </form>
+    <a
+      class="whatsapp"
+      href="${buildWhatsAppConfirmationUrl(order)}"
+      target="_blank"
+      rel="noopener noreferrer"
+      >Ouvrir WhatsApp</a
+    >
+  </div>`;
 }
 
 function buildNextPageUrl(query: AdminOrdersQuery, cursor: string | null): string | null {

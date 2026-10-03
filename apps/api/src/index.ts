@@ -6,6 +6,7 @@ import { secureHeaders } from 'hono/secure-headers';
 import { cloudflareAccess, type AppEnvironment } from './auth/cloudflareAccess';
 import { products, settings } from './db/schema';
 import { registerAdminOrdersRoutes } from './modules/admin-orders/adminOrders.routes';
+import { registerConfirmationRoutes } from './modules/confirmation/confirmation.routes';
 import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
 
 const STORE_ID = 'para-main';
@@ -25,6 +26,7 @@ export const createApp = (accessMiddleware = cloudflareAccess()): Hono<AppEnviro
   app.use('/admin/*', accessMiddleware);
 
   registerAdminOrdersRoutes(app);
+  registerConfirmationRoutes(app);
   registerOrderWebhookRoutes(app);
 
   app.get('/admin/whoami', (context) =>
