@@ -16,9 +16,16 @@ verification. The actor comes from the verified Access identity; the request can
 6. If the D1 transaction fails after the courier accepted the request, retrying uses the same
    idempotency key and must return the same courier parcel.
 
-## Secrets
+## Manual-first configuration
 
-The Worker adapter reads `COURIER_API_URL`, `COURIER_ACCOUNT_ID`, `COURIER_API_TOKEN`, and
-`COURIER_NAME` from bindings. Real credentials belong in Wrangler secrets and are never committed.
+`COURIER_MODE=manual` is the default. It requires no credentials and creates a deterministic internal
+tracking number. `COURIER_NAME=self-delivery` is suitable when an owner delivers the first parcels.
+
+Manual shipment statuses must be updated by an operator; the adapter does not invent tracking events.
+
+## Optional API secrets
+
+When `COURIER_MODE=api`, the Worker adapter reads `COURIER_API_URL`, `COURIER_ACCOUNT_ID`,
+`COURIER_API_TOKEN`, and `COURIER_NAME` from bindings. Real credentials belong in Wrangler secrets and are never committed.
 The token and account identifier are sent as headers, not persisted in D1 or included in application
 errors.

@@ -8,8 +8,10 @@ CF_ACCESS_AUD=
 CF_ACCESS_TEAM_DOMAIN=
 # HMAC secret for POST /api/webhooks/orders. Generate a long random value locally.
 ORDER_WEBHOOK_SECRET=
-# Courier adapter credentials. Keep real values in Wrangler secrets.
-COURIER_NAME=
+# Manual/self-delivery works without credentials. Switch to `api` only after selecting a courier.
+COURIER_MODE=manual
+COURIER_NAME=self-delivery
+# API-mode credentials. Keep real values in Wrangler secrets.
 COURIER_API_URL=
 COURIER_ACCOUNT_ID=
 COURIER_API_TOKEN=

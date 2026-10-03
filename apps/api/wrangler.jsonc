@@ -16,6 +16,8 @@
     },
   ],
   "vars": {
+    "COURIER_MODE": "manual",
+    "COURIER_NAME": "self-delivery",
     "ENVIRONMENT": "local",
     "GIT_SHA": "uncommitted",
   },
@@ -34,6 +36,8 @@
         },
       ],
       "vars": {
+        "COURIER_MODE": "manual",
+        "COURIER_NAME": "self-delivery",
         "ENVIRONMENT": "staging",
         "GIT_SHA": "uncommitted",
       },
@@ -44,6 +48,8 @@
     "prod": {
       "workers_dev": true,
       "vars": {
+        "COURIER_MODE": "manual",
+        "COURIER_NAME": "self-delivery",
         "ENVIRONMENT": "production",
         "GIT_SHA": "uncommitted",
       },

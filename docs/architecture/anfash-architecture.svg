@@ -147,7 +147,7 @@
     <g id="module-create-parcel" data-status="implemented">
       <rect x="880" y="617" width="260" height="58" class="node implemented"/>
       <text x="900" y="641" class="node-title">Create parcel</text>
-      <text x="900" y="663" class="node-copy">Secrets · idempotent shipment</text>
+      <text x="900" y="663" class="node-copy">Manual first · API optional</text>
     </g>
   </g>
 
@@ -245,7 +245,7 @@
       <rect x="1235" y="305" width="280" height="100" class="rail-node"/>
       <text x="1255" y="335" class="rail-node-title">GitHub Actions CI</text>
       <text x="1255" y="359" class="rail-copy">Frozen install · lint · typecheck</text>
-      <text x="1255" y="381" class="rail-copy">335 automated tests passing</text>
+      <text x="1255" y="381" class="rail-copy">338 automated tests passing</text>
     </g>
 
     <path d="M1375 405 L1375 445" class="rail-flow"/>

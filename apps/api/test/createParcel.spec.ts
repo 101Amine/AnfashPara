@@ -11,6 +11,7 @@ import {
   HttpCourierClient,
   createCourierClientFromBindings,
 } from '../src/integrations/courier/courierClient.factory';
+import { ManualCourierClient } from '../src/integrations/courier/manualCourierClient';
 import { createApp } from '../src/index';
 
 const ORDER_ID = '0199b001-1000-7000-8000-000000000001';
@@ -218,6 +219,26 @@ describe('create parcel workflow', () => {
     });
   });
 
+  it('uses manual self-delivery by default without courier credentials', async () => {
+    const response = await createApp(authenticatedAccess).request(
+      `https://example.com/admin/orders/${ORDER_ID}/parcel`,
+      { method: 'POST' },
+      bindings(),
+    );
+    const shipment = await env.DB.prepare(
+      'SELECT courier, tracking_number, status_normalized FROM shipments WHERE order_id = ?',
+    )
+      .bind(ORDER_ID)
+      .first<Record<string, unknown>>();
+
+    expect(response.status).toBe(303);
+    expect(shipment).toEqual({
+      courier: 'self-delivery',
+      status_normalized: 'created',
+      tracking_number: 'SELF-PARA-101-00000001',
+    });
+  });
+
   it('applies PACKED then SHIPPED when the courier reports pickup', async () => {
     const client = successfulClient({ ...createdParcel, rawStatus: 'PICKED', status: 'picked' });
     expect((await postParcel(client)).status).toBe(303);
@@ -305,6 +326,30 @@ describe('create parcel workflow', () => {
 });
 
 describe('courier Worker-secret adapter', () => {
+  it('creates deterministic internal references in manual mode', async () => {
+    const client = new ManualCourierClient();
+
+    await expect(client.createParcel(parcelInput())).resolves.toEqual({
+      courier: 'self-delivery',
+      rawStatus: 'MANUAL_CREATED',
+      status: 'created',
+      trackingNumber: 'SELF-PARA-101-00000001',
+    });
+    await expect(client.createParcel(parcelInput())).resolves.toMatchObject({
+      trackingNumber: 'SELF-PARA-101-00000001',
+    });
+  });
+
+  it('requires operator updates instead of inventing manual tracking statuses', async () => {
+    const client = new ManualCourierClient();
+
+    await expect(client.getStatus('SELF-PARA-101-00000001')).rejects.toMatchObject({
+      code: 'manual_status_required',
+      operation: 'get_status',
+      retryable: false,
+    });
+  });
+
   it('loads credentials from bindings and sends them only as request headers', async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       Response.json({
@@ -324,19 +369,7 @@ describe('courier Worker-secret adapter', () => {
       },
       fetcher,
     );
-    const result = await client.createParcel({
-      codAmountCentimes: 24_500,
-      idempotencyKey: ORDER_ID,
-      orderId: ORDER_ID,
-      orderReference: 'PARA-101',
-      productSummary: '2× Bio-Oil 125ml',
-      receiver: {
-        address: '12 rue Atlas',
-        city: 'Rabat',
-        name: 'Salma Test',
-        phoneE164: '+212612345678',
-      },
-    });
+    const result = await client.createParcel(parcelInput());
 
     expect(result).toMatchObject({ courier: 'configured-courier', trackingNumber: 'TRACK-101' });
     const [url, request] = fetcher.mock.calls[0]!;
@@ -348,8 +381,13 @@ describe('courier Worker-secret adapter', () => {
     expect(String(request?.body)).not.toContain('token-secret');
   });
 
-  it('rejects missing Worker secrets without exposing their names', () => {
-    expect(() => createCourierClientFromBindings(bindings())).toThrow(CourierConfigurationError);
+  it('requires secrets only when API mode is explicitly selected', () => {
+    expect(
+      createCourierClientFromBindings({ ...bindings(), COURIER_MODE: 'manual' }),
+    ).toBeInstanceOf(ManualCourierClient);
+    expect(() => createCourierClientFromBindings({ ...bindings(), COURIER_MODE: 'api' })).toThrow(
+      CourierConfigurationError,
+    );
   });
 });
 
@@ -386,4 +424,20 @@ async function countShipments(): Promise<number> {
     (await env.DB.prepare('SELECT COUNT(*) AS count FROM shipments').first<{ count: number }>())
       ?.count ?? 0
   );
+}
+
+function parcelInput() {
+  return {
+    codAmountCentimes: 24_500,
+    idempotencyKey: ORDER_ID,
+    orderId: ORDER_ID,
+    orderReference: 'PARA-101',
+    productSummary: '2× Bio-Oil 125ml',
+    receiver: {
+      address: '12 rue Atlas',
+      city: 'Rabat',
+      name: 'Salma Test',
+      phoneE164: '+212612345678',
+    },
+  } as const;
 }
