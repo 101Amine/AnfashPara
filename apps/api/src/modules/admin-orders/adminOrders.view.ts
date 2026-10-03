@@ -527,6 +527,13 @@ function renderOrderActions(
         : ''
     }
     ${renderLabelActions(order)} ${renderManualShipmentActions(order)}
+    ${
+      order.shipmentId !== null && order.shipmentManual
+        ? html`<a class="action action-parcel" href="${`/admin/shipments/${order.shipmentId}/fees`}"
+            >Frais manuels</a
+          >`
+        : ''
+    }
   </div>`;
 }
 

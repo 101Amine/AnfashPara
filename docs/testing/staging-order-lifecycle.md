@@ -73,7 +73,7 @@ The runner used temporary HMAC secrets for this execution. Both were removed aft
 staging to its previous Access-only secret configuration. The synthetic `STG-` rows remain in D1 as
 reviewable evidence and are explicitly marked `ne pas livrer`.
 
-## Week 3 automation (#24) — deployment/configuration still pending
+## Week 3 automation (#24) — verified on staging
 
 The `Staging lifecycle rehearsal` workflow runs only on manual dispatch from `main`,
 not on unit-test pushes or a schedule. It checks that the deployed SHA matches the
@@ -103,8 +103,39 @@ On that date the user created `Anfash staging lifecycle` with a one-year duratio
 (expiry 2027-10-03). The exact-token `Anfash staging lifecycle runner` Service Auth
 policy was saved on `Anfash Para Admin (staging)`, alongside the unchanged human
 policy; the protected hostname/path and 24-hour application session stayed unchanged.
-Worker/GitHub secrets, deployment, the automated live run and revocation proof remain
-pending. The earlier Week 2 run above was interactive, not evidence of this automation.
+Worker and GitHub secrets were configured with explicit user approval. They contain
+staging-only credentials; no values were written to Git or this document. PR #34 was
+merged and deployed as `41aa4d6f9d72ddf18193ee154b2a0a869584a5a1`.
+The earlier Week 2 run above was interactive, not evidence of this automation.
+
+### Live automation evidence — 2026-10-03
+
+- [Initial successful run](https://github.com/101Amine/AnfashPara/actions/runs/37158925093),
+  nonce `5a8bfdbf7425431fa64c634901373609`: all five cases passed, archive completed.
+- [Denied run](https://github.com/101Amine/AnfashPara/actions/runs/37159064256),
+  nonce `8f70d4826c3d4361856f54218d6405ec`: only the exact-token Service Auth grant was
+  detached from the staging application; the runner failed and a read-only D1 count
+  confirmed **zero orders** for that nonce. Human Google admin access remained usable.
+- The original exact-token policy was restored, without changing the human policy.
+  [Restored-policy run](https://github.com/101Amine/AnfashPara/actions/runs/37159329448),
+  nonce `7f80ad054bc14145ae6043dbcda6dfcb`: passed and archived.
+
+This proves revocation/restoration of the token's **application grant**, not permanent
+destruction of the token resource. The resource remains active until its recorded
+expiry or explicit revocation. Rotation/revocation procedure below still applies.
+
+| Case               | Final status | Attempts | Shipment events | Inventory movements | Order events |
+| ------------------ | ------------ | -------- | --------------- | ------------------- | ------------ |
+| delivered          | DELIVERED    | 1        | 2               | 1                   | 5            |
+| refused-returned   | RETURNED     | 1        | 3               | 2                   | 6            |
+| customer-cancelled | CANCELLED    | 1        | 0               | 0                   | 2            |
+| three-no-answer    | CANCELLED    | 3        | 0               | 0                   | 4            |
+| duplicate-replay   | DELIVERED    | 1        | 2               | 1                   | 5            |
+
+Counts above are the asserted pre-archive report. Archiving appends compensation,
+so retained post-archive inventory history has additional rows. Machine rehearsal
+does not exercise public checkout, manual fee recording or settlement imports;
+those belong to the separate Week 3 review.
 
 Cloudflare's [application-token contract](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/application-token/)
 documents service `common_name` and empty `sub`. The Worker keeps its human identity
@@ -150,4 +181,5 @@ Worker client-ID allowlist and GitHub secret pair, and proving a run before revo
 the old token. To disable immediately, remove the Worker allowlist and revoke the
 token or its policy. A request with revoked credentials should receive a controlled
 403/401 (or Access denial/redirect); the runner fails preflight before ingestion.
-Revocation proof against live Access remains part of the pending acceptance checks.
+Live denial after removal of the application grant is recorded above. Do not describe
+it as a permanently deleted token or a production revocation test.

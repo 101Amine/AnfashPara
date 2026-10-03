@@ -17,6 +17,7 @@ import type { LabelFetcher } from './modules/labels/labels.service';
 import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
 import { registerPublicOrderRoutes } from './modules/public-orders/publicOrder.routes';
 import { registerParcelRoutes } from './modules/shipping/parcel.routes';
+import { registerManualFeesRoutes } from './modules/shipping/manualFees.routes';
 import { registerSettlementPreviewRoutes } from './modules/settlements/settlementPreview.routes';
 import { registerReconciliationRoutes } from './modules/settlements/reconciliation.routes';
 import { registerOutboxRoutes } from './modules/outbox/outbox.routes';
@@ -45,7 +46,8 @@ export const createApp = (
 ): Hono<AppEnvironment> => {
   const app = new Hono<AppEnvironment>();
 
-  app.use('*', secureHeaders());
+  // Preserve same-origin POST Origin headers without leaking referrers to external sites.
+  app.use('*', secureHeaders({ referrerPolicy: 'same-origin' }));
   app.use('*', async (context, next) => {
     await next();
     if (!context.res.headers.has('Cache-Control')) {
@@ -59,6 +61,7 @@ export const createApp = (
   registerConfirmationRoutes(app);
   registerLabelRoutes(app, labelFetcher);
   registerParcelRoutes(app, courierClientFactory);
+  registerManualFeesRoutes(app);
   registerPublicOrderRoutes(app);
   registerOrderWebhookRoutes(app);
   registerCourierWebhookRoutes(app);
