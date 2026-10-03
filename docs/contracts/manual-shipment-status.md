@@ -16,12 +16,12 @@ or a browser form with exactly one field:
 { "action": "picked" }
 ```
 
-| Current order | Action | New order status | Queue label |
-| --- | --- | --- | --- |
-| PACKED | picked | SHIPPED | Remis / Expédié |
-| SHIPPED | delivered | DELIVERED | Livré |
-| SHIPPED | refused | REFUSED | Refusé |
-| REFUSED | returned | RETURNED | Retourné |
+| Current order | Action    | New order status | Queue label     |
+| ------------- | --------- | ---------------- | --------------- |
+| PACKED        | picked    | SHIPPED          | Remis / Expédié |
+| SHIPPED       | delivered | DELIVERED        | Livré           |
+| SHIPPED       | refused   | REFUSED          | Refusé          |
+| REFUSED       | returned  | RETURNED         | Retourné        |
 
 The server chooses the actor, timestamps, raw status and event ID. A submitted actor,
 unknown field, or SETTLED action is rejected. Browser forms require a same-origin Origin
