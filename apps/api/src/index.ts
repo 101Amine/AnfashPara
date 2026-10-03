@@ -16,6 +16,7 @@ import type { LabelFetcher } from './modules/labels/labels.service';
 import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
 import { registerPublicOrderRoutes } from './modules/public-orders/publicOrder.routes';
 import { registerParcelRoutes } from './modules/shipping/parcel.routes';
+import { registerSettlementPreviewRoutes } from './modules/settlements/settlementPreview.routes';
 import { registerCourierWebhookRoutes } from './modules/status-sync/courierWebhook.routes';
 import {
   pollOpenShipments,
@@ -49,6 +50,7 @@ export const createApp = (
   registerPublicOrderRoutes(app);
   registerOrderWebhookRoutes(app);
   registerCourierWebhookRoutes(app);
+  registerSettlementPreviewRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),
