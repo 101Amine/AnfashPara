@@ -23,9 +23,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@para/core": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.13.7",
-    "jose": "^6.2.12"
+    "jose": "^6.2.12",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.1.8",

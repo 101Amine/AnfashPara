@@ -1,0 +1,324 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1380" viewBox="0 0 1600 1380" role="img" aria-labelledby="title description">
+  <title id="title">Anfash Para living system architecture</title>
+  <desc id="description">A layered architecture map showing implemented, live, and planned modules across clients, Cloudflare security, Worker and Hono application code, reusable business logic, D1 data storage, and delivery automation.</desc>
+
+  <defs>
+    <linearGradient id="page-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#eef4ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <style>
+      text { font-family: Inter, "Segoe UI", Arial, sans-serif; fill: #172033; }
+      .title { font-size: 34px; font-weight: 750; letter-spacing: -0.6px; }
+      .subtitle { font-size: 16px; fill: #526077; }
+      .layer { fill: #ffffff; stroke: #cbd5e1; stroke-width: 1.5; rx: 18; filter: url(#shadow); }
+      .layer-label { font-size: 13px; font-weight: 750; letter-spacing: 1.5px; fill: #64748b; }
+      .node { stroke-width: 2; rx: 12; }
+      .live { fill: #eaf2ff; stroke: #2563eb; }
+      .implemented { fill: #eaf8f0; stroke: #16834b; }
+      .infra { fill: #f2efff; stroke: #7656d8; }
+      .planned { fill: #fff8e8; stroke: #d68700; stroke-dasharray: 8 6; }
+      .future { fill: #f4f6f8; stroke: #94a3b8; stroke-dasharray: 5 5; }
+      .node-title { font-size: 16px; font-weight: 700; }
+      .node-copy { font-size: 13px; fill: #526077; }
+      .node-small { font-size: 12px; fill: #526077; }
+      .flow { fill: none; stroke: #64748b; stroke-width: 2; marker-end: url(#arrow); }
+      .flow-blue { fill: none; stroke: #2563eb; stroke-width: 2.4; marker-end: url(#arrow-blue); }
+      .flow-dashed { fill: none; stroke: #d68700; stroke-width: 2; stroke-dasharray: 7 6; marker-end: url(#arrow); }
+      .rail { fill: #132238; stroke: #132238; rx: 18; filter: url(#shadow); }
+      .rail-title { font-size: 13px; font-weight: 750; letter-spacing: 1.5px; fill: #a9b8ce; }
+      .rail-node { fill: #1e324f; stroke: #557197; stroke-width: 1.5; rx: 10; }
+      .rail-node-title { fill: #ffffff; font-size: 15px; font-weight: 700; }
+      .rail-copy { fill: #c4d0df; font-size: 12px; }
+      .rail-flow { fill: none; stroke: #7fa6dc; stroke-width: 2; marker-end: url(#arrow-blue); }
+      .badge-text { font-size: 11px; font-weight: 750; letter-spacing: 0.5px; }
+      .note { font-size: 13px; fill: #526077; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1380" fill="url(#page-bg)"/>
+
+  <g id="document-header">
+    <text x="60" y="60" class="title">Anfash Para — living architecture</text>
+    <text x="60" y="90" class="subtitle">What exists today, what is protected, and what we will build next · v1 · 2026-10-03</text>
+    <rect x="1324" y="43" width="216" height="38" rx="19" fill="#172033"/>
+    <text x="1432" y="67" text-anchor="middle" font-size="13" font-weight="700" fill="#ffffff">CLOUDFLARE-NATIVE STACK</text>
+  </g>
+
+  <!-- CLIENT LAYER -->
+  <g id="layer-clients" data-layer="clients">
+    <rect x="60" y="125" width="1110" height="150" class="layer"/>
+    <text x="84" y="153" class="layer-label">1 · CLIENTS</text>
+
+    <g id="module-storefront-ui" data-status="planned">
+      <rect x="90" y="172" width="315" height="78" class="node planned"/>
+      <text x="110" y="201" class="node-title">Storefront UI</text>
+      <text x="110" y="225" class="node-copy">Mobile-first shop · not implemented yet</text>
+      <rect x="307" y="184" width="78" height="22" rx="11" fill="#ffebbd"/>
+      <text x="346" y="199" text-anchor="middle" class="badge-text" fill="#9a5c00">PLANNED</text>
+    </g>
+
+    <g id="module-admin-ui" data-status="planned">
+      <rect x="430" y="172" width="315" height="78" class="node planned"/>
+      <text x="450" y="201" class="node-title">Admin UI</text>
+      <text x="450" y="225" class="node-copy">Internal operations console · not built yet</text>
+      <rect x="647" y="184" width="78" height="22" rx="11" fill="#ffebbd"/>
+      <text x="686" y="199" text-anchor="middle" class="badge-text" fill="#9a5c00">PLANNED</text>
+    </g>
+
+    <g id="module-api-consumers" data-status="live">
+      <rect x="770" y="172" width="370" height="78" class="node live"/>
+      <text x="790" y="201" class="node-title">Browser / API requests</text>
+      <text x="790" y="225" class="node-copy">Products, settings, health, version, whoami</text>
+      <rect x="1059" y="184" width="61" height="22" rx="11" fill="#d6e6ff"/>
+      <text x="1089" y="199" text-anchor="middle" class="badge-text" fill="#1d5bbf">LIVE</text>
+    </g>
+  </g>
+
+  <!-- EDGE / SECURITY -->
+  <g id="layer-edge" data-layer="edge-security">
+    <rect x="60" y="310" width="1110" height="155" class="layer"/>
+    <text x="84" y="338" class="layer-label">2 · CLOUDFLARE EDGE &amp; SECURITY</text>
+
+    <g id="module-public-edge" data-status="live">
+      <rect x="90" y="357" width="300" height="82" class="node live"/>
+      <text x="110" y="387" class="node-title">Public API edge</text>
+      <text x="110" y="411" class="node-copy">Routes under /api/* reach the Worker</text>
+    </g>
+
+    <g id="module-cloudflare-access" data-status="live">
+      <rect x="415" y="357" width="330" height="82" class="node live"/>
+      <text x="435" y="387" class="node-title">Cloudflare Access</text>
+      <text x="435" y="411" class="node-copy">Google login + email policy for /admin/*</text>
+    </g>
+
+    <g id="module-access-jwt" data-status="implemented">
+      <rect x="770" y="357" width="370" height="82" class="node implemented"/>
+      <text x="790" y="387" class="node-title">Worker JWT verification</text>
+      <text x="790" y="411" class="node-copy">AUD + team-domain JWKS · defense in depth</text>
+    </g>
+  </g>
+
+  <!-- WORKER / APPLICATION -->
+  <g id="layer-application" data-layer="application">
+    <rect x="60" y="500" width="1110" height="205" class="layer"/>
+    <text x="84" y="528" class="layer-label">3 · WORKER APPLICATION</text>
+
+    <g id="module-worker-runtime" data-status="live">
+      <rect x="90" y="550" width="220" height="125" class="node infra"/>
+      <text x="110" y="580" class="node-title">Cloudflare Worker</text>
+      <text x="110" y="604" class="node-copy">Serverless runtime</text>
+      <text x="110" y="626" class="node-copy">Security headers</text>
+      <text x="110" y="648" class="node-copy">Scheduled cron handler</text>
+    </g>
+
+    <g id="module-hono-router" data-status="implemented">
+      <rect x="335" y="550" width="220" height="125" class="node implemented"/>
+      <text x="355" y="580" class="node-title">Hono</text>
+      <text x="355" y="604" class="node-copy">Routing + middleware</text>
+      <text x="355" y="626" class="node-copy">Request validation</text>
+      <text x="355" y="648" class="node-copy">JSON responses</text>
+    </g>
+
+    <g id="module-live-routes" data-status="live">
+      <rect x="580" y="550" width="275" height="125" class="node live"/>
+      <text x="600" y="580" class="node-title">Implemented routes</text>
+      <text x="600" y="604" class="node-small">/api/health · /api/version</text>
+      <text x="600" y="626" class="node-small">/api/products · /api/settings</text>
+      <text x="600" y="648" class="node-small">/admin/whoami</text>
+      <text x="600" y="668" class="node-small">POST /api/webhooks/orders</text>
+    </g>
+
+    <g id="module-order-ingestion" data-status="implemented">
+      <rect x="880" y="550" width="260" height="125" class="node implemented"/>
+      <text x="900" y="580" class="node-title">Order ingestion</text>
+      <text x="900" y="604" class="node-copy">Signed webhook + deduplication</text>
+      <text x="900" y="626" class="node-copy">Atomic D1 transaction</text>
+      <text x="900" y="648" class="node-copy">Frozen price + COGS</text>
+    </g>
+  </g>
+
+  <!-- DOMAIN CORE -->
+  <g id="layer-domain" data-layer="domain-core">
+    <rect x="60" y="740" width="1110" height="170" class="layer"/>
+    <text x="84" y="768" class="layer-label">4 · DOMAIN CORE · packages/core + API contracts</text>
+
+    <g id="module-money" data-status="implemented">
+      <rect x="90" y="790" width="230" height="90" class="node implemented"/>
+      <text x="110" y="820" class="node-title">Money</text>
+      <text x="110" y="844" class="node-copy">Integer centimes internally</text>
+      <text x="110" y="864" class="node-copy">MAD for display</text>
+    </g>
+
+    <g id="module-phone" data-status="implemented">
+      <rect x="345" y="790" width="230" height="90" class="node implemented"/>
+      <text x="365" y="820" class="node-title">Moroccan phone</text>
+      <text x="365" y="844" class="node-copy">Normalization</text>
+      <text x="365" y="864" class="node-copy">WhatsApp URL creation</text>
+    </g>
+
+    <g id="module-order-state-machine" data-status="implemented">
+      <rect x="600" y="790" width="250" height="90" class="node implemented"/>
+      <text x="620" y="820" class="node-title">Order state machine</text>
+      <text x="620" y="844" class="node-copy">11 statuses · actor guards</text>
+      <text x="620" y="864" class="node-copy">Pure, tested transitions</text>
+    </g>
+
+    <g id="module-internal-contracts" data-status="implemented">
+      <rect x="875" y="790" width="265" height="90" class="node implemented"/>
+      <text x="895" y="820" class="node-title">Internal API contracts</text>
+      <text x="895" y="844" class="node-copy">Orders + fulfillment payloads</text>
+      <text x="895" y="864" class="node-copy">Sanitized test fixtures</text>
+    </g>
+  </g>
+
+  <!-- DATA LAYER -->
+  <g id="layer-data" data-layer="data">
+    <rect x="60" y="945" width="1110" height="315" class="layer"/>
+    <text x="84" y="973" class="layer-label">5 · DATA ACCESS &amp; STORAGE</text>
+
+    <g id="module-drizzle" data-status="implemented">
+      <rect x="90" y="995" width="240" height="105" class="node infra"/>
+      <text x="110" y="1025" class="node-title">Drizzle ORM</text>
+      <text x="110" y="1049" class="node-copy">Typed SQL + schema</text>
+      <text x="110" y="1071" class="node-copy">Migrations + seed data</text>
+    </g>
+
+    <g id="module-d1" data-status="live">
+      <rect x="355" y="995" width="785" height="235" class="node live"/>
+      <text x="375" y="1025" class="node-title">Cloudflare D1 · SQLite-compatible managed database</text>
+      <text x="375" y="1049" class="node-copy">Local + staging · 15 tables · constraints and indexes</text>
+
+      <g id="data-catalog">
+        <rect x="380" y="1070" width="230" height="130" rx="10" fill="#ffffff" stroke="#b6c8e3"/>
+        <text x="398" y="1097" font-size="14" font-weight="700">Catalog</text>
+        <text x="398" y="1122" class="node-small">products</text>
+        <text x="398" y="1143" class="node-small">settings</text>
+        <text x="398" y="1176" class="node-small">Prices are authoritative here</text>
+      </g>
+
+      <g id="data-commerce">
+        <rect x="625" y="1070" width="230" height="130" rx="10" fill="#ffffff" stroke="#b6c8e3"/>
+        <text x="643" y="1097" font-size="14" font-weight="700">Commerce</text>
+        <text x="643" y="1122" class="node-small">customers · orders</text>
+        <text x="643" y="1143" class="node-small">order_items · order_events</text>
+        <text x="643" y="1164" class="node-small">confirmation_attempts</text>
+      </g>
+
+      <g id="data-operations">
+        <rect x="870" y="1070" width="245" height="130" rx="10" fill="#ffffff" stroke="#b6c8e3"/>
+        <text x="888" y="1097" font-size="14" font-weight="700">Operations &amp; finance</text>
+        <text x="888" y="1122" class="node-small">inventory_movements · shipments</text>
+        <text x="888" y="1143" class="node-small">shipment_events · outbox · inbox</text>
+        <text x="888" y="1164" class="node-small">settlements · lines · ad spend</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- DELIVERY RAIL -->
+  <g id="delivery-rail" data-layer="delivery">
+    <rect x="1210" y="125" width="330" height="1135" class="rail"/>
+    <text x="1235" y="157" class="rail-title">DELIVERY &amp; QUALITY RAIL</text>
+
+    <g id="module-github" data-status="live">
+      <rect x="1235" y="185" width="280" height="80" class="rail-node"/>
+      <text x="1255" y="215" class="rail-node-title">GitHub repository</text>
+      <text x="1255" y="239" class="rail-copy">Feature branch → pull request</text>
+    </g>
+
+    <path d="M1375 265 L1375 305" class="rail-flow"/>
+
+    <g id="module-ci" data-status="live">
+      <rect x="1235" y="305" width="280" height="100" class="rail-node"/>
+      <text x="1255" y="335" class="rail-node-title">GitHub Actions CI</text>
+      <text x="1255" y="359" class="rail-copy">Frozen install · lint · typecheck</text>
+      <text x="1255" y="381" class="rail-copy">297 automated tests passing</text>
+    </g>
+
+    <path d="M1375 405 L1375 445" class="rail-flow"/>
+
+    <g id="module-main-protection" data-status="live">
+      <rect x="1235" y="445" width="280" height="88" class="rail-node"/>
+      <text x="1255" y="475" class="rail-node-title">Protected main</text>
+      <text x="1255" y="499" class="rail-copy">PR + green CI required</text>
+    </g>
+
+    <path d="M1375 533 L1375 573" class="rail-flow"/>
+
+    <g id="module-deploy-workflow" data-status="live">
+      <rect x="1235" y="573" width="280" height="110" class="rail-node"/>
+      <text x="1255" y="603" class="rail-node-title">Staging deployment</text>
+      <text x="1255" y="627" class="rail-copy">Apply D1 migrations</text>
+      <text x="1255" y="649" class="rail-copy">Wrangler deploy + GIT_SHA</text>
+    </g>
+
+    <path d="M1375 683 L1375 723" class="rail-flow"/>
+
+    <g id="module-staging" data-status="live">
+      <rect x="1235" y="723" width="280" height="102" class="rail-node"/>
+      <text x="1255" y="753" class="rail-node-title">Live staging</text>
+      <text x="1255" y="777" class="rail-copy">Worker + D1 + Access</text>
+      <text x="1255" y="799" class="rail-copy">/api/version exposes merge SHA</text>
+    </g>
+
+    <g id="architecture-rules">
+      <line x1="1235" y1="880" x2="1515" y2="880" stroke="#405675"/>
+      <text x="1235" y="915" class="rail-node-title">How this map evolves</text>
+      <text x="1235" y="947" class="rail-copy">1. Every merged module gets a node.</text>
+      <text x="1235" y="973" class="rail-copy">2. Every dependency gets an arrow.</text>
+      <text x="1235" y="999" class="rail-copy">3. Planned nodes stay dashed.</text>
+      <text x="1235" y="1025" class="rail-copy">4. Built modules become solid green.</text>
+      <text x="1235" y="1051" class="rail-copy">5. Deployed surfaces become blue.</text>
+    </g>
+
+    <g id="current-boundary">
+      <rect x="1235" y="1102" width="280" height="120" rx="10" fill="#fff7de" stroke="#e2b448"/>
+      <text x="1255" y="1132" font-size="15" font-weight="700" fill="#7d5100">Current boundary</text>
+      <text x="1255" y="1158" font-size="12" fill="#755b2a">No external storefront.</text>
+      <text x="1255" y="1180" font-size="12" fill="#755b2a">No production courier integration.</text>
+      <text x="1255" y="1202" font-size="12" fill="#755b2a">We own the application end to end.</text>
+    </g>
+  </g>
+
+  <!-- MAIN REQUEST / DATA FLOW -->
+  <g id="flows" aria-label="System flows">
+    <path d="M955 250 L955 357" class="flow-blue"/>
+    <text x="970" y="304" class="node-small">admin</text>
+    <path d="M915 250 C915 290 240 285 240 357" class="flow-blue"/>
+    <text x="560" y="298" class="node-small">public</text>
+    <path d="M580 439 C580 470 955 462 955 500" class="flow-blue"/>
+    <path d="M240 439 C240 470 200 470 200 550" class="flow-blue"/>
+    <path d="M955 439 L955 500" class="flow-blue"/>
+    <path d="M310 612 L335 612" class="flow"/>
+    <path d="M555 612 L580 612" class="flow"/>
+    <path d="M855 612 L880 612" class="flow"/>
+    <path d="M445 675 C445 720 725 710 725 790" class="flow"/>
+    <path d="M718 675 C718 720 1007 710 1007 790" class="flow"/>
+    <path d="M725 880 C725 925 210 925 210 995" class="flow"/>
+    <path d="M330 1048 L355 1048" class="flow"/>
+  </g>
+
+  <!-- LEGEND -->
+  <g id="legend">
+    <rect x="60" y="1290" width="1480" height="58" rx="14" fill="#ffffff" stroke="#cbd5e1"/>
+    <text x="84" y="1325" font-size="13" font-weight="700">STATUS</text>
+    <rect x="155" y="1307" width="24" height="20" rx="5" class="implemented"/>
+    <text x="190" y="1323" class="note">implemented + tested</text>
+    <rect x="365" y="1307" width="24" height="20" rx="5" class="live"/>
+    <text x="400" y="1323" class="note">live/deployed surface</text>
+    <rect x="585" y="1307" width="24" height="20" rx="5" class="infra"/>
+    <text x="620" y="1323" class="note">platform/infrastructure</text>
+    <rect x="805" y="1307" width="24" height="20" rx="5" class="planned"/>
+    <text x="840" y="1323" class="note">planned or contract-only</text>
+    <text x="1130" y="1323" class="note">Source of truth: this file in docs/architecture</text>
+  </g>
+</svg>

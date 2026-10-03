@@ -1,0 +1,43 @@
+[
+  {
+    "eventId": "test-event-created-001",
+    "status": "created",
+    "occurredAt": "2026-10-03T09:00:00.000Z"
+  },
+  {
+    "eventId": "test-event-picked-001",
+    "status": "picked",
+    "occurredAt": "2026-10-03T12:00:00.000Z"
+  },
+  {
+    "eventId": "test-event-transit-001",
+    "status": "in_transit",
+    "occurredAt": "2026-10-04T07:30:00.000Z"
+  },
+  {
+    "eventId": "test-event-out-001",
+    "status": "out_for_delivery",
+    "occurredAt": "2026-10-04T10:00:00.000Z"
+  },
+  {
+    "eventId": "test-event-delivered-001",
+    "status": "delivered",
+    "occurredAt": "2026-10-04T14:15:00.000Z"
+  },
+  {
+    "eventId": "test-event-refused-001",
+    "status": "refused",
+    "occurredAt": "2026-10-04T14:15:00.000Z",
+    "note": "Customer refused the test parcel"
+  },
+  {
+    "eventId": "test-event-returned-001",
+    "status": "returned",
+    "occurredAt": "2026-10-06T11:00:00.000Z"
+  },
+  {
+    "eventId": "test-event-lost-001",
+    "status": "lost",
+    "occurredAt": "2026-10-06T11:00:00.000Z"
+  }
+]

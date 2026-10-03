@@ -5,6 +5,7 @@ import { secureHeaders } from 'hono/secure-headers';
 
 import { cloudflareAccess, type AppEnvironment } from './auth/cloudflareAccess';
 import { products, settings } from './db/schema';
+import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
 
 const STORE_ID = 'para-main';
 const READ_CACHE_CONTROL = 'public, max-age=60';
@@ -21,6 +22,8 @@ export const createApp = (accessMiddleware = cloudflareAccess()): Hono<AppEnviro
   });
 
   app.use('/admin/*', accessMiddleware);
+
+  registerOrderWebhookRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),

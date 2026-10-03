@@ -11,6 +11,10 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
+import { SHIPMENT_STATUSES } from '../contracts/fulfillment';
+
+export { SHIPMENT_STATUSES } from '../contracts/fulfillment';
+
 export const ORDER_STATUSES = [
   'NEW',
   'CONFIRMING',
@@ -41,16 +45,6 @@ export const CONFIRMATION_OUTCOMES = [
   'cancelled',
   'callback',
   'wrong_number',
-] as const;
-export const SHIPMENT_STATUSES = [
-  'created',
-  'picked',
-  'in_transit',
-  'out_for_delivery',
-  'delivered',
-  'refused',
-  'returned',
-  'lost',
 ] as const;
 export const OUTBOX_STATUSES = ['pending', 'processing', 'done', 'failed'] as const;
 export const SETTLEMENT_LINE_STATUSES = ['matched', 'fee_mismatch', 'unmatched'] as const;

@@ -6,3 +6,5 @@ GIT_SHA=uncommitted
 # Team domain accepts either anfashpara.cloudflareaccess.com or the HTTPS URL.
 CF_ACCESS_AUD=
 CF_ACCESS_TEAM_DOMAIN=
+# HMAC secret for POST /api/webhooks/orders. Generate a long random value locally.
+ORDER_WEBHOOK_SECRET=

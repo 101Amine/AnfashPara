@@ -5,6 +5,7 @@ import type { MiddlewareHandler } from 'hono';
 export type AppBindings = ApiBindings & {
   CF_ACCESS_AUD?: string;
   CF_ACCESS_TEAM_DOMAIN?: string;
+  ORDER_WEBHOOK_SECRET?: string;
 };
 
 export type AccessIdentity = {
