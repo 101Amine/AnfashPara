@@ -5,6 +5,7 @@ import type { MiddlewareHandler } from 'hono';
 export type AppBindings = Omit<ApiBindings, 'COURIER_MODE' | 'COURIER_NAME'> & {
   CF_ACCESS_AUD?: string;
   CF_ACCESS_TEAM_DOMAIN?: string;
+  CF_ACCESS_STAGING_CLIENT_ID?: string;
   COURIER_ACCOUNT_ID?: string;
   COURIER_API_TOKEN?: string;
   COURIER_API_URL?: string;
@@ -18,6 +19,7 @@ export type AppBindings = Omit<ApiBindings, 'COURIER_MODE' | 'COURIER_NAME'> & {
 export type AccessIdentity = {
   email: string;
   subject: string;
+  kind?: 'service';
 };
 
 export type AppVariables = {
@@ -31,6 +33,7 @@ export type AppEnvironment = {
 
 type AccessClaims = JWTPayload & {
   email?: unknown;
+  common_name?: unknown;
 };
 
 type MiddlewareOptions = {
@@ -70,6 +73,7 @@ export const verifyCloudflareAccessToken = async (
   audience: string,
   teamDomain: string,
   getKey?: JWTVerifyGetKey,
+  serviceClientId?: string,
 ): Promise<AccessIdentity> => {
   const issuer = normalizeTeamDomain(teamDomain);
   const { payload } = await jwtVerify<AccessClaims>(token, getKey ?? getRemoteKeySet(issuer), {
@@ -77,6 +81,19 @@ export const verifyCloudflareAccessToken = async (
     audience,
     issuer,
   });
+
+  if (payload.common_name !== undefined) {
+    if (
+      !serviceClientId ||
+      payload.common_name !== serviceClientId ||
+      payload.sub !== '' ||
+      payload.type !== 'app' ||
+      typeof payload.exp !== 'number' ||
+      payload.email !== undefined
+    )
+      throw new Error('Unapproved service identity');
+    return { email: 'staging-runner@service.invalid', subject: serviceClientId, kind: 'service' };
+  }
 
   if (
     typeof payload.email !== 'string' ||
@@ -115,7 +132,44 @@ export const cloudflareAccess =
         audience,
         teamDomain,
         options.getKey,
+        context.env.ENVIRONMENT === 'staging' &&
+          new URL(context.req.url).hostname === 'para-api-staging.alanfashpara.workers.dev'
+          ? context.env.CF_ACCESS_STAGING_CLIENT_ID?.trim()
+          : undefined,
       );
+      if (identity.kind === 'service') {
+        const path = new URL(context.req.url).pathname;
+        const action =
+          /^\/admin\/orders\/([a-f0-9-]{36})\/(?:confirmation|parcel|shipments\/[a-f0-9-]{36}\/status)$/u.exec(
+            path,
+          );
+        const testing =
+          path === '/admin/testing/lifecycle' && ['GET', 'POST'].includes(context.req.method);
+        if (!testing && !(context.req.method === 'POST' && action && context.env.DB))
+          return context.json({ error: 'Forbidden' }, 403);
+        if (!testing && action && context.env.DB) {
+          const row = await context.env.DB.prepare(
+            'SELECT order_number,utm_campaign,utm_source,address,note FROM orders WHERE id=? AND store_id=?',
+          )
+            .bind(action[1], 'para-main')
+            .first<{
+              order_number: string;
+              utm_campaign: string;
+              utm_source: string;
+              address: string;
+              note: string;
+            }>();
+          if (
+            !row ||
+            !/^STG-[a-f0-9]{32}-[1-5]$/u.test(row.order_number) ||
+            row.order_number !== `STG-${row.utm_campaign}-${row.order_number.slice(-1)}` ||
+            row.utm_source !== 'staging-test' ||
+            row.note !== 'STAGING_LIFECYCLE' ||
+            row.address !== 'Adresse test staging - ne pas livrer'
+          )
+            return context.json({ error: 'Forbidden' }, 403);
+        }
+      }
       context.set('accessIdentity', identity);
       await next();
     } catch {

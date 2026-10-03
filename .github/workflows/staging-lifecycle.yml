@@ -1,0 +1,41 @@
+# .github/workflows/staging-lifecycle.yml
+name: Staging lifecycle rehearsal
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staging-lifecycle
+  cancel-in-progress: false
+jobs:
+  rehearse:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Run five synthetic orders on staging only
+        run: pnpm --filter @para/api test:staging:lifecycle
+        env:
+          STAGING_EXPECTED_SHA: ${{ github.sha }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.STAGING_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.STAGING_ACCESS_CLIENT_SECRET }}
+          ORDER_WEBHOOK_SECRET: ${{ secrets.STAGING_ORDER_WEBHOOK_SECRET }}
+          COURIER_WEBHOOK_SECRET: ${{ secrets.STAGING_COURIER_WEBHOOK_SECRET }}
+      - name: Publish redacted report
+        if: always()
+        working-directory: apps/api
+        run: |
+          if [ -f staging-lifecycle-report.json ]; then
+            printf '### Staging lifecycle report\n```json\n' >> "$GITHUB_STEP_SUMMARY"
+            cat staging-lifecycle-report.json >> "$GITHUB_STEP_SUMMARY"
+            printf '\n```\n' >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf 'Runner did not start; inspect setup steps.\n' >> "$GITHUB_STEP_SUMMARY"
+          fi

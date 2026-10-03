@@ -13,6 +13,7 @@ dist/
 !.dev.vars.example
 
 *.log
+apps/api/staging-lifecycle-report.json
 *recovery-codes*.txt
 .DS_Store
 Thumbs.db
