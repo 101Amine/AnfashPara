@@ -176,6 +176,13 @@
       <path d="M 855 709 H 1149 V 1105 H 1140" class="flow"/>
       <text x="880" y="722" class="node-small">Reconcile · approve · SETTLED</text>
     </g>
+    <g id="module-operations-dashboard" data-status="implemented">
+      <title>Access and Worker JWT protected /admin/dashboard: repository reads orders, events, shipments, settlement lines and inventory; presenter resolves Casablanca week and French money; escaped read-only view. Implemented, not yet deployed.</title>
+      <path d="M 820 648 H 865 V 1168 H 880" class="flow"/>
+      <rect x="590" y="681" width="260" height="42" rx="8" class="implemented"/>
+      <text x="600" y="698" class="node-small">/admin/dashboard · trusted KPI reads</text>
+      <text x="600" y="715" class="node-small">Casablanca week · payout · ledger stock</text>
+    </g>
   </g>
 
   <!-- DOMAIN CORE -->
@@ -280,7 +287,7 @@
       <rect x="1235" y="305" width="280" height="100" class="rail-node"/>
       <text x="1255" y="335" class="rail-node-title">GitHub Actions CI</text>
       <text x="1255" y="359" class="rail-copy">Frozen install · lint · typecheck</text>
-      <text x="1255" y="381" class="rail-copy">498 automated tests passing</text>
+      <text x="1255" y="381" class="rail-copy">512 automated tests passing</text>
     </g>
 
     <path d="M1375 405 L1375 445" class="rail-flow"/>
