@@ -270,6 +270,47 @@ const orderItemRows = orders.map((order, index) => {
   ];
 });
 
+const inventoryMovementRows: SqlValue[][] = products.map((product, index) => [
+  uuidV7(200 + index),
+  STORE_ID,
+  product.sku,
+  20 + index * 5,
+  'purchase',
+  'SEED-PO-001',
+  BASE_TIMESTAMP,
+]);
+
+for (const [index, order] of orders.entries()) {
+  if (!['SHIPPED', 'DELIVERED', 'REFUSED', 'RETURNED', 'SETTLED'].includes(order.status)) {
+    continue;
+  }
+
+  const orderItem = orderItemRows[index]!;
+  const sku = String(orderItem[3]);
+  const quantity = Number(orderItem[4]);
+  inventoryMovementRows.push([
+    uuidV7(210 + index),
+    STORE_ID,
+    sku,
+    -quantity,
+    'shipped',
+    `order:${order.id}:shipped`,
+    timestampAt(index + 2),
+  ]);
+
+  if (order.status === 'RETURNED') {
+    inventoryMovementRows.push([
+      uuidV7(240 + index),
+      STORE_ID,
+      sku,
+      quantity,
+      'returned',
+      `order:${order.id}:returned`,
+      timestampAt(index + 3),
+    ]);
+  }
+}
+
 const orderEventRows = orders.map((order, index) => [
   uuidV7(120 + index),
   STORE_ID,
@@ -631,15 +672,7 @@ ON CONFLICT(id) DO UPDATE SET sku = excluded.sku, slug = excluded.slug, name = e
   insertSql(
     'inventory_movements',
     ['id', 'store_id', 'sku', 'quantity', 'reason', 'reference', 'created_at'],
-    products.map((product, index) => [
-      uuidV7(200 + index),
-      STORE_ID,
-      product.sku,
-      20 + index * 5,
-      'purchase',
-      'SEED-PO-001',
-      BASE_TIMESTAMP,
-    ]),
+    inventoryMovementRows,
   ),
   insertSql(
     'ad_spend_daily',
