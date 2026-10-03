@@ -18,6 +18,7 @@
     "deploy:prod": "wrangler deploy --env prod",
     "deploy:staging": "wrangler deploy --env staging",
     "dev": "wrangler dev --test-scheduled",
+    "test:staging:lifecycle": "tsx scripts/staging-order-lifecycle.ts",
     "tail:staging": "wrangler tail --env staging --format pretty",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
