@@ -1,5 +1,8 @@
 // apps/api/src/modules/admin-orders/adminOrders.presenter.ts
+import { toWaMeUrl } from '@para/core';
+
 import type { OrderStatus } from '../../db/schema';
+import type { AdminOrderListItem } from './adminOrders.repository';
 
 const STATUS_LABELS: Readonly<Record<OrderStatus, string>> = {
   CANCELLED: 'Annulée',
@@ -37,6 +40,16 @@ export function formatOrderDate(value: string): string {
 
 export function formatOrderMoney(centimes: number): string {
   return moneyFormatter.format(centimes / 100);
+}
+
+export function buildWhatsAppConfirmationUrl(order: AdminOrderListItem): string {
+  const url = new URL(toWaMeUrl(order.phoneE164));
+  const customerName = order.customerName ?? 'bonjour';
+  const orderReference = order.orderNumber ?? order.id;
+  const city = order.city ?? 'votre ville';
+  const message = `Bonjour ${customerName} 🌿 Merci pour votre commande n°${orderReference}, total ${formatOrderMoney(order.codAmountCentimes)}, livraison à ${city}. Répondez 1 pour confirmer ou 2 pour modifier. Paiement à la livraison. Salam, jawbi b 1 bach n-confirmiw. Choukran !`;
+  url.searchParams.set('text', message);
+  return url.toString();
 }
 
 export function formatSlaAge(

@@ -50,7 +50,7 @@ type ActorGuardTable = Readonly<
 export const TRANSITIONS: Readonly<Record<Status, readonly Status[]>> = {
   NEW: ['CONFIRMING'],
   CONFIRMING: ['NO_ANSWER', 'CONFIRMED', 'CANCELLED'],
-  NO_ANSWER: ['NO_ANSWER', 'CANCELLED'],
+  NO_ANSWER: ['NO_ANSWER', 'CONFIRMED', 'CANCELLED'],
   CONFIRMED: ['PACKED'],
   CANCELLED: [],
   PACKED: ['SHIPPED'],
@@ -70,6 +70,7 @@ export const ACTOR_GUARDS: ActorGuardTable = {
   },
   NO_ANSWER: {
     NO_ANSWER: ['user', 'system'],
+    CONFIRMED: ['user', 'system'],
     CANCELLED: ['user', 'system'],
   },
   CONFIRMED: { PACKED: ['user', 'system'] },
