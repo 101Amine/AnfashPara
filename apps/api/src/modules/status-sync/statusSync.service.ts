@@ -2,6 +2,7 @@
 import { transition, type Actor, type CourierStatusCode, type Status } from '@para/core';
 
 import { createUuidV7 } from '../../shared/uuidV7';
+import { createOrderInventoryMovementStatements } from '../inventory/inventory.service';
 
 const STORE_ID = 'para-main';
 
@@ -189,6 +190,25 @@ export async function synchronizeCourierStatus(
              WHERE id = ? AND store_id = ?`,
           )
           .bind(timestamp, shipment.customer_id, STORE_ID),
+      );
+    }
+
+    if (transitionEvents.some((event) => event.toStatus === 'SHIPPED')) {
+      statements.push(
+        ...(await createOrderInventoryMovementStatements(database, {
+          occurredAt: timestamp,
+          orderId: shipment.order_id,
+          reason: 'shipped',
+        })),
+      );
+    }
+    if (transitionEvents.some((event) => event.toStatus === 'RETURNED')) {
+      statements.push(
+        ...(await createOrderInventoryMovementStatements(database, {
+          occurredAt: timestamp,
+          orderId: shipment.order_id,
+          reason: 'returned',
+        })),
       );
     }
   }

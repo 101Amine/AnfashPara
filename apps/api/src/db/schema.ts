@@ -127,6 +127,12 @@ export const inventoryMovements = sqliteTable(
   },
   (table) => [
     index('inventory_store_sku_created_index').on(table.storeId, table.sku, table.createdAt),
+    uniqueIndex('inventory_store_sku_reason_reference_unique').on(
+      table.storeId,
+      table.sku,
+      table.reason,
+      table.reference,
+    ),
     check('inventory_id_uuid_v7', uuidV7Check(table.id)),
     check(
       'inventory_quantity_non_zero',

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `inventory_store_sku_reason_reference_unique` ON `inventory_movements` (`store_id`,`sku`,`reason`,`reference`);

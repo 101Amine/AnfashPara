@@ -1,0 +1,1879 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "c6a46a33-2c58-4fa4-82cc-36a5d485ed22",
+  "prevId": "12149945-b890-4f5e-a388-356b83a3c558",
+  "tables": {
+    "ad_spend_daily": {
+      "name": "ad_spend_daily",
+      "columns": {
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "day": {
+          "name": "day",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "campaign": {
+          "name": "campaign",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "adset": {
+          "name": "adset",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "ad_content": {
+          "name": "ad_content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "spend_centimes": {
+          "name": "spend_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "ad_spend_store_day_index": {
+          "name": "ad_spend_store_day_index",
+          "columns": ["store_id", "day"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "ad_spend_daily_primary": {
+          "columns": ["store_id", "day", "platform", "campaign", "adset", "ad_content"],
+          "name": "ad_spend_daily_primary"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "ad_spend_day_date": {
+          "name": "ad_spend_day_date",
+          "value": "\"ad_spend_daily\".\"day\" GLOB '????-??-??'"
+        },
+        "ad_spend_amount_valid": {
+          "name": "ad_spend_amount_valid",
+          "value": "typeof(\"ad_spend_daily\".\"spend_centimes\") = 'integer' AND \"ad_spend_daily\".\"spend_centimes\" >= 0"
+        },
+        "ad_spend_created_at_iso": {
+          "name": "ad_spend_created_at_iso",
+          "value": "\"ad_spend_daily\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "ad_spend_updated_at_iso": {
+          "name": "ad_spend_updated_at_iso",
+          "value": "\"ad_spend_daily\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "confirmation_attempts": {
+      "name": "confirmation_attempts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "channel": {
+          "name": "channel",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attempted_by": {
+          "name": "attempted_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "confirmation_attempts_order_created_index": {
+          "name": "confirmation_attempts_order_created_index",
+          "columns": ["order_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "confirmation_attempts_order_id_orders_id_fk": {
+          "name": "confirmation_attempts_order_id_orders_id_fk",
+          "tableFrom": "confirmation_attempts",
+          "tableTo": "orders",
+          "columnsFrom": ["order_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "confirmation_attempts_id_uuid_v7": {
+          "name": "confirmation_attempts_id_uuid_v7",
+          "value": "length(\"confirmation_attempts\".\"id\") = 36 AND substr(\"confirmation_attempts\".\"id\", 9, 1) = '-' AND substr(\"confirmation_attempts\".\"id\", 14, 1) = '-' AND substr(\"confirmation_attempts\".\"id\", 15, 1) = '7' AND substr(\"confirmation_attempts\".\"id\", 19, 1) = '-' AND lower(substr(\"confirmation_attempts\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"confirmation_attempts\".\"id\", 24, 1) = '-'"
+        },
+        "confirmation_attempts_channel_valid": {
+          "name": "confirmation_attempts_channel_valid",
+          "value": "\"confirmation_attempts\".\"channel\" IN ('call', 'whatsapp')"
+        },
+        "confirmation_attempts_outcome_valid": {
+          "name": "confirmation_attempts_outcome_valid",
+          "value": "\"confirmation_attempts\".\"outcome\" IN ('confirmed', 'no_answer', 'cancelled', 'callback', 'wrong_number')"
+        },
+        "confirmation_attempts_created_at_iso": {
+          "name": "confirmation_attempts_created_at_iso",
+          "value": "\"confirmation_attempts\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "courier_settlements": {
+      "name": "courier_settlements",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "courier": {
+          "name": "courier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "statement_reference": {
+          "name": "statement_reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount_paid_centimes": {
+          "name": "amount_paid_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_file": {
+          "name": "source_file",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "courier_settlements_store_statement_unique": {
+          "name": "courier_settlements_store_statement_unique",
+          "columns": ["store_id", "courier", "statement_reference"],
+          "isUnique": true
+        },
+        "courier_settlements_store_imported_index": {
+          "name": "courier_settlements_store_imported_index",
+          "columns": ["store_id", "imported_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "courier_settlements_id_uuid_v7": {
+          "name": "courier_settlements_id_uuid_v7",
+          "value": "length(\"courier_settlements\".\"id\") = 36 AND substr(\"courier_settlements\".\"id\", 9, 1) = '-' AND substr(\"courier_settlements\".\"id\", 14, 1) = '-' AND substr(\"courier_settlements\".\"id\", 15, 1) = '7' AND substr(\"courier_settlements\".\"id\", 19, 1) = '-' AND lower(substr(\"courier_settlements\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"courier_settlements\".\"id\", 24, 1) = '-'"
+        },
+        "courier_settlements_period_start_date": {
+          "name": "courier_settlements_period_start_date",
+          "value": "\"courier_settlements\".\"period_start\" GLOB '????-??-??'"
+        },
+        "courier_settlements_period_end_date": {
+          "name": "courier_settlements_period_end_date",
+          "value": "\"courier_settlements\".\"period_end\" GLOB '????-??-??'"
+        },
+        "courier_settlements_period_order": {
+          "name": "courier_settlements_period_order",
+          "value": "\"courier_settlements\".\"period_start\" <= \"courier_settlements\".\"period_end\""
+        },
+        "courier_settlements_amount_paid_valid": {
+          "name": "courier_settlements_amount_paid_valid",
+          "value": "typeof(\"courier_settlements\".\"amount_paid_centimes\") = 'integer' AND \"courier_settlements\".\"amount_paid_centimes\" >= 0"
+        },
+        "courier_settlements_imported_at_iso": {
+          "name": "courier_settlements_imported_at_iso",
+          "value": "\"courier_settlements\".\"imported_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "customers": {
+      "name": "customers",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "phone_e164": {
+          "name": "phone_e164",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "orders_count": {
+          "name": "orders_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "delivered_count": {
+          "name": "delivered_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "refused_count": {
+          "name": "refused_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "blacklisted": {
+          "name": "blacklisted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "customers_store_phone_unique": {
+          "name": "customers_store_phone_unique",
+          "columns": ["store_id", "phone_e164"],
+          "isUnique": true
+        },
+        "customers_store_blacklisted_index": {
+          "name": "customers_store_blacklisted_index",
+          "columns": ["store_id", "blacklisted"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "customers_id_uuid_v7": {
+          "name": "customers_id_uuid_v7",
+          "value": "length(\"customers\".\"id\") = 36 AND substr(\"customers\".\"id\", 9, 1) = '-' AND substr(\"customers\".\"id\", 14, 1) = '-' AND substr(\"customers\".\"id\", 15, 1) = '7' AND substr(\"customers\".\"id\", 19, 1) = '-' AND lower(substr(\"customers\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"customers\".\"id\", 24, 1) = '-'"
+        },
+        "customers_phone_e164_ma": {
+          "name": "customers_phone_e164_ma",
+          "value": "\"customers\".\"phone_e164\" GLOB '+212[67]????????'"
+        },
+        "customers_orders_count_valid": {
+          "name": "customers_orders_count_valid",
+          "value": "typeof(\"customers\".\"orders_count\") = 'integer' AND \"customers\".\"orders_count\" >= 0"
+        },
+        "customers_delivered_count_valid": {
+          "name": "customers_delivered_count_valid",
+          "value": "typeof(\"customers\".\"delivered_count\") = 'integer' AND \"customers\".\"delivered_count\" >= 0"
+        },
+        "customers_refused_count_valid": {
+          "name": "customers_refused_count_valid",
+          "value": "typeof(\"customers\".\"refused_count\") = 'integer' AND \"customers\".\"refused_count\" >= 0"
+        },
+        "customers_blacklisted_boolean": {
+          "name": "customers_blacklisted_boolean",
+          "value": "\"customers\".\"blacklisted\" IN (0, 1)"
+        },
+        "customers_created_at_iso": {
+          "name": "customers_created_at_iso",
+          "value": "\"customers\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "customers_updated_at_iso": {
+          "name": "customers_updated_at_iso",
+          "value": "\"customers\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "inventory_movements": {
+      "name": "inventory_movements",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sku": {
+          "name": "sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "inventory_store_sku_created_index": {
+          "name": "inventory_store_sku_created_index",
+          "columns": ["store_id", "sku", "created_at"],
+          "isUnique": false
+        },
+        "inventory_store_sku_reason_reference_unique": {
+          "name": "inventory_store_sku_reason_reference_unique",
+          "columns": ["store_id", "sku", "reason", "reference"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "inventory_movements_sku_products_sku_fk": {
+          "name": "inventory_movements_sku_products_sku_fk",
+          "tableFrom": "inventory_movements",
+          "tableTo": "products",
+          "columnsFrom": ["sku"],
+          "columnsTo": ["sku"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "inventory_id_uuid_v7": {
+          "name": "inventory_id_uuid_v7",
+          "value": "length(\"inventory_movements\".\"id\") = 36 AND substr(\"inventory_movements\".\"id\", 9, 1) = '-' AND substr(\"inventory_movements\".\"id\", 14, 1) = '-' AND substr(\"inventory_movements\".\"id\", 15, 1) = '7' AND substr(\"inventory_movements\".\"id\", 19, 1) = '-' AND lower(substr(\"inventory_movements\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"inventory_movements\".\"id\", 24, 1) = '-'"
+        },
+        "inventory_quantity_non_zero": {
+          "name": "inventory_quantity_non_zero",
+          "value": "typeof(\"inventory_movements\".\"quantity\") = 'integer' AND \"inventory_movements\".\"quantity\" <> 0"
+        },
+        "inventory_reason_valid": {
+          "name": "inventory_reason_valid",
+          "value": "\"inventory_movements\".\"reason\" IN ('purchase', 'shipped', 'returned', 'damaged', 'adjustment')"
+        },
+        "inventory_created_at_iso": {
+          "name": "inventory_created_at_iso",
+          "value": "\"inventory_movements\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "order_events": {
+      "name": "order_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "from_status": {
+          "name": "from_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "to_status": {
+          "name": "to_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor": {
+          "name": "actor",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "order_events_order_created_index": {
+          "name": "order_events_order_created_index",
+          "columns": ["order_id", "created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "order_events_order_id_orders_id_fk": {
+          "name": "order_events_order_id_orders_id_fk",
+          "tableFrom": "order_events",
+          "tableTo": "orders",
+          "columnsFrom": ["order_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "order_events_id_uuid_v7": {
+          "name": "order_events_id_uuid_v7",
+          "value": "length(\"order_events\".\"id\") = 36 AND substr(\"order_events\".\"id\", 9, 1) = '-' AND substr(\"order_events\".\"id\", 14, 1) = '-' AND substr(\"order_events\".\"id\", 15, 1) = '7' AND substr(\"order_events\".\"id\", 19, 1) = '-' AND lower(substr(\"order_events\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"order_events\".\"id\", 24, 1) = '-'"
+        },
+        "order_events_from_status_valid": {
+          "name": "order_events_from_status_valid",
+          "value": "\"order_events\".\"from_status\" IS NULL OR \"order_events\".\"from_status\" IN ('NEW', 'CONFIRMING', 'NO_ANSWER', 'CONFIRMED', 'CANCELLED', 'PACKED', 'SHIPPED', 'DELIVERED', 'REFUSED', 'RETURNED', 'SETTLED')"
+        },
+        "order_events_to_status_valid": {
+          "name": "order_events_to_status_valid",
+          "value": "\"order_events\".\"to_status\" IN ('NEW', 'CONFIRMING', 'NO_ANSWER', 'CONFIRMED', 'CANCELLED', 'PACKED', 'SHIPPED', 'DELIVERED', 'REFUSED', 'RETURNED', 'SETTLED')"
+        },
+        "order_events_payload_json": {
+          "name": "order_events_payload_json",
+          "value": "\"order_events\".\"payload_json\" IS NULL OR (json_valid(\"order_events\".\"payload_json\"))"
+        },
+        "order_events_created_at_iso": {
+          "name": "order_events_created_at_iso",
+          "value": "\"order_events\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "order_items": {
+      "name": "order_items",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sku": {
+          "name": "sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "unit_price_centimes": {
+          "name": "unit_price_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "unit_cogs_centimes": {
+          "name": "unit_cogs_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "order_items_order_index": {
+          "name": "order_items_order_index",
+          "columns": ["order_id"],
+          "isUnique": false
+        },
+        "order_items_store_sku_index": {
+          "name": "order_items_store_sku_index",
+          "columns": ["store_id", "sku"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "order_items_order_id_orders_id_fk": {
+          "name": "order_items_order_id_orders_id_fk",
+          "tableFrom": "order_items",
+          "tableTo": "orders",
+          "columnsFrom": ["order_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "order_items_sku_products_sku_fk": {
+          "name": "order_items_sku_products_sku_fk",
+          "tableFrom": "order_items",
+          "tableTo": "products",
+          "columnsFrom": ["sku"],
+          "columnsTo": ["sku"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "order_items_id_uuid_v7": {
+          "name": "order_items_id_uuid_v7",
+          "value": "length(\"order_items\".\"id\") = 36 AND substr(\"order_items\".\"id\", 9, 1) = '-' AND substr(\"order_items\".\"id\", 14, 1) = '-' AND substr(\"order_items\".\"id\", 15, 1) = '7' AND substr(\"order_items\".\"id\", 19, 1) = '-' AND lower(substr(\"order_items\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"order_items\".\"id\", 24, 1) = '-'"
+        },
+        "order_items_quantity_valid": {
+          "name": "order_items_quantity_valid",
+          "value": "typeof(\"order_items\".\"quantity\") = 'integer' AND \"order_items\".\"quantity\" > 0"
+        },
+        "order_items_unit_price_valid": {
+          "name": "order_items_unit_price_valid",
+          "value": "typeof(\"order_items\".\"unit_price_centimes\") = 'integer' AND \"order_items\".\"unit_price_centimes\" >= 0"
+        },
+        "order_items_unit_cogs_valid": {
+          "name": "order_items_unit_cogs_valid",
+          "value": "typeof(\"order_items\".\"unit_cogs_centimes\") = 'integer' AND \"order_items\".\"unit_cogs_centimes\" >= 0"
+        },
+        "order_items_created_at_iso": {
+          "name": "order_items_created_at_iso",
+          "value": "\"order_items\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "orders": {
+      "name": "orders",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order_number": {
+          "name": "order_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "customer_id": {
+          "name": "customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'NEW'"
+        },
+        "cod_amount_centimes": {
+          "name": "cod_amount_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "shipping_fee_customer_centimes": {
+          "name": "shipping_fee_customer_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "utm_source": {
+          "name": "utm_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "utm_campaign": {
+          "name": "utm_campaign",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "utm_content": {
+          "name": "utm_content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "placed_at": {
+          "name": "placed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "shipped_at": {
+          "name": "shipped_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "closed_at": {
+          "name": "closed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "raw_payload_json": {
+          "name": "raw_payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "orders_store_external_unique": {
+          "name": "orders_store_external_unique",
+          "columns": ["store_id", "external_id"],
+          "isUnique": true
+        },
+        "orders_store_number_unique": {
+          "name": "orders_store_number_unique",
+          "columns": ["store_id", "order_number"],
+          "isUnique": true
+        },
+        "orders_store_status_placed_index": {
+          "name": "orders_store_status_placed_index",
+          "columns": ["store_id", "status", "placed_at"],
+          "isUnique": false
+        },
+        "orders_customer_placed_index": {
+          "name": "orders_customer_placed_index",
+          "columns": ["customer_id", "placed_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "orders_customer_id_customers_id_fk": {
+          "name": "orders_customer_id_customers_id_fk",
+          "tableFrom": "orders",
+          "tableTo": "customers",
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "orders_id_uuid_v7": {
+          "name": "orders_id_uuid_v7",
+          "value": "length(\"orders\".\"id\") = 36 AND substr(\"orders\".\"id\", 9, 1) = '-' AND substr(\"orders\".\"id\", 14, 1) = '-' AND substr(\"orders\".\"id\", 15, 1) = '7' AND substr(\"orders\".\"id\", 19, 1) = '-' AND lower(substr(\"orders\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"orders\".\"id\", 24, 1) = '-'"
+        },
+        "orders_status_valid": {
+          "name": "orders_status_valid",
+          "value": "\"orders\".\"status\" IN ('NEW', 'CONFIRMING', 'NO_ANSWER', 'CONFIRMED', 'CANCELLED', 'PACKED', 'SHIPPED', 'DELIVERED', 'REFUSED', 'RETURNED', 'SETTLED')"
+        },
+        "orders_cod_amount_valid": {
+          "name": "orders_cod_amount_valid",
+          "value": "typeof(\"orders\".\"cod_amount_centimes\") = 'integer' AND \"orders\".\"cod_amount_centimes\" >= 0"
+        },
+        "orders_shipping_fee_customer_valid": {
+          "name": "orders_shipping_fee_customer_valid",
+          "value": "typeof(\"orders\".\"shipping_fee_customer_centimes\") = 'integer' AND \"orders\".\"shipping_fee_customer_centimes\" >= 0"
+        },
+        "orders_placed_at_iso": {
+          "name": "orders_placed_at_iso",
+          "value": "\"orders\".\"placed_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "orders_confirmed_at_iso": {
+          "name": "orders_confirmed_at_iso",
+          "value": "\"orders\".\"confirmed_at\" IS NULL OR (\"orders\".\"confirmed_at\" GLOB '????-??-??T??:??:??.???Z')"
+        },
+        "orders_shipped_at_iso": {
+          "name": "orders_shipped_at_iso",
+          "value": "\"orders\".\"shipped_at\" IS NULL OR (\"orders\".\"shipped_at\" GLOB '????-??-??T??:??:??.???Z')"
+        },
+        "orders_closed_at_iso": {
+          "name": "orders_closed_at_iso",
+          "value": "\"orders\".\"closed_at\" IS NULL OR (\"orders\".\"closed_at\" GLOB '????-??-??T??:??:??.???Z')"
+        },
+        "orders_raw_payload_json": {
+          "name": "orders_raw_payload_json",
+          "value": "json_valid(\"orders\".\"raw_payload_json\")"
+        },
+        "orders_created_at_iso": {
+          "name": "orders_created_at_iso",
+          "value": "\"orders\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "orders_updated_at_iso": {
+          "name": "orders_updated_at_iso",
+          "value": "\"orders\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "outbox": {
+      "name": "outbox",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "topic": {
+          "name": "topic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aggregate_type": {
+          "name": "aggregate_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "aggregate_id": {
+          "name": "aggregate_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "next_attempt_at": {
+          "name": "next_attempt_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_error": {
+          "name": "last_error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "outbox_dispatch_index": {
+          "name": "outbox_dispatch_index",
+          "columns": ["store_id", "status", "next_attempt_at"],
+          "isUnique": false
+        },
+        "outbox_aggregate_index": {
+          "name": "outbox_aggregate_index",
+          "columns": ["aggregate_type", "aggregate_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "outbox_id_uuid_v7": {
+          "name": "outbox_id_uuid_v7",
+          "value": "length(\"outbox\".\"id\") = 36 AND substr(\"outbox\".\"id\", 9, 1) = '-' AND substr(\"outbox\".\"id\", 14, 1) = '-' AND substr(\"outbox\".\"id\", 15, 1) = '7' AND substr(\"outbox\".\"id\", 19, 1) = '-' AND lower(substr(\"outbox\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"outbox\".\"id\", 24, 1) = '-'"
+        },
+        "outbox_payload_json": {
+          "name": "outbox_payload_json",
+          "value": "json_valid(\"outbox\".\"payload_json\")"
+        },
+        "outbox_status_valid": {
+          "name": "outbox_status_valid",
+          "value": "\"outbox\".\"status\" IN ('pending', 'processing', 'done', 'failed')"
+        },
+        "outbox_attempts_valid": {
+          "name": "outbox_attempts_valid",
+          "value": "typeof(\"outbox\".\"attempts\") = 'integer' AND \"outbox\".\"attempts\" >= 0"
+        },
+        "outbox_next_attempt_at_iso": {
+          "name": "outbox_next_attempt_at_iso",
+          "value": "\"outbox\".\"next_attempt_at\" IS NULL OR (\"outbox\".\"next_attempt_at\" GLOB '????-??-??T??:??:??.???Z')"
+        },
+        "outbox_processed_at_iso": {
+          "name": "outbox_processed_at_iso",
+          "value": "\"outbox\".\"processed_at\" IS NULL OR (\"outbox\".\"processed_at\" GLOB '????-??-??T??:??:??.???Z')"
+        },
+        "outbox_created_at_iso": {
+          "name": "outbox_created_at_iso",
+          "value": "\"outbox\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "outbox_updated_at_iso": {
+          "name": "outbox_updated_at_iso",
+          "value": "\"outbox\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "products": {
+      "name": "products",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sku": {
+          "name": "sku",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "brand": {
+          "name": "brand",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cogs_centimes": {
+          "name": "cogs_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "price_centimes": {
+          "name": "price_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "compare_at_centimes": {
+          "name": "compare_at_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "active": {
+          "name": "active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "products_sku_unique": {
+          "name": "products_sku_unique",
+          "columns": ["sku"],
+          "isUnique": true
+        },
+        "products_store_sku_unique": {
+          "name": "products_store_sku_unique",
+          "columns": ["store_id", "sku"],
+          "isUnique": true
+        },
+        "products_store_slug_unique": {
+          "name": "products_store_slug_unique",
+          "columns": ["store_id", "slug"],
+          "isUnique": true
+        },
+        "products_store_active_index": {
+          "name": "products_store_active_index",
+          "columns": ["store_id", "active"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "products_sku_not_empty": {
+          "name": "products_sku_not_empty",
+          "value": "length(trim(\"products\".\"sku\")) > 0"
+        },
+        "products_cogs_centimes_valid": {
+          "name": "products_cogs_centimes_valid",
+          "value": "typeof(\"products\".\"cogs_centimes\") = 'integer' AND \"products\".\"cogs_centimes\" >= 0"
+        },
+        "products_price_centimes_valid": {
+          "name": "products_price_centimes_valid",
+          "value": "typeof(\"products\".\"price_centimes\") = 'integer' AND \"products\".\"price_centimes\" >= 0"
+        },
+        "products_compare_at_centimes_valid": {
+          "name": "products_compare_at_centimes_valid",
+          "value": "\"products\".\"compare_at_centimes\" IS NULL OR (typeof(\"products\".\"compare_at_centimes\") = 'integer' AND \"products\".\"compare_at_centimes\" >= 0)"
+        },
+        "products_active_boolean": {
+          "name": "products_active_boolean",
+          "value": "\"products\".\"active\" IN (0, 1)"
+        },
+        "products_created_at_iso": {
+          "name": "products_created_at_iso",
+          "value": "\"products\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "products_updated_at_iso": {
+          "name": "products_updated_at_iso",
+          "value": "\"products\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "settings": {
+      "name": "settings",
+      "columns": {
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'MAD'"
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'fr-MA'"
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Africa/Casablanca'"
+        },
+        "minimum_order_centimes": {
+          "name": "minimum_order_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "settings_currency_iso_4217": {
+          "name": "settings_currency_iso_4217",
+          "value": "length(\"settings\".\"currency\") = 3"
+        },
+        "settings_minimum_order_valid": {
+          "name": "settings_minimum_order_valid",
+          "value": "typeof(\"settings\".\"minimum_order_centimes\") = 'integer' AND \"settings\".\"minimum_order_centimes\" >= 0"
+        },
+        "settings_created_at_iso": {
+          "name": "settings_created_at_iso",
+          "value": "\"settings\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "settings_updated_at_iso": {
+          "name": "settings_updated_at_iso",
+          "value": "\"settings\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "settlement_lines": {
+      "name": "settlement_lines",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "settlement_id": {
+          "name": "settlement_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tracking_number": {
+          "name": "tracking_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cod_collected_centimes": {
+          "name": "cod_collected_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "fee_centimes": {
+          "name": "fee_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "net_centimes": {
+          "name": "net_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expected_fee_centimes": {
+          "name": "expected_fee_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "line_status": {
+          "name": "line_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "settlement_lines_settlement_index": {
+          "name": "settlement_lines_settlement_index",
+          "columns": ["settlement_id"],
+          "isUnique": false
+        },
+        "settlement_lines_tracking_index": {
+          "name": "settlement_lines_tracking_index",
+          "columns": ["store_id", "tracking_number"],
+          "isUnique": false
+        },
+        "settlement_lines_shipment_index": {
+          "name": "settlement_lines_shipment_index",
+          "columns": ["shipment_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "settlement_lines_settlement_id_courier_settlements_id_fk": {
+          "name": "settlement_lines_settlement_id_courier_settlements_id_fk",
+          "tableFrom": "settlement_lines",
+          "tableTo": "courier_settlements",
+          "columnsFrom": ["settlement_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "settlement_lines_shipment_id_shipments_id_fk": {
+          "name": "settlement_lines_shipment_id_shipments_id_fk",
+          "tableFrom": "settlement_lines",
+          "tableTo": "shipments",
+          "columnsFrom": ["shipment_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "settlement_lines_id_uuid_v7": {
+          "name": "settlement_lines_id_uuid_v7",
+          "value": "length(\"settlement_lines\".\"id\") = 36 AND substr(\"settlement_lines\".\"id\", 9, 1) = '-' AND substr(\"settlement_lines\".\"id\", 14, 1) = '-' AND substr(\"settlement_lines\".\"id\", 15, 1) = '7' AND substr(\"settlement_lines\".\"id\", 19, 1) = '-' AND lower(substr(\"settlement_lines\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"settlement_lines\".\"id\", 24, 1) = '-'"
+        },
+        "settlement_lines_cod_collected_valid": {
+          "name": "settlement_lines_cod_collected_valid",
+          "value": "typeof(\"settlement_lines\".\"cod_collected_centimes\") = 'integer' AND \"settlement_lines\".\"cod_collected_centimes\" >= 0"
+        },
+        "settlement_lines_fee_valid": {
+          "name": "settlement_lines_fee_valid",
+          "value": "typeof(\"settlement_lines\".\"fee_centimes\") = 'integer' AND \"settlement_lines\".\"fee_centimes\" >= 0"
+        },
+        "settlement_lines_net_valid": {
+          "name": "settlement_lines_net_valid",
+          "value": "typeof(\"settlement_lines\".\"net_centimes\") = 'integer' AND \"settlement_lines\".\"net_centimes\" >= 0"
+        },
+        "settlement_lines_expected_fee_valid": {
+          "name": "settlement_lines_expected_fee_valid",
+          "value": "typeof(\"settlement_lines\".\"expected_fee_centimes\") = 'integer' AND \"settlement_lines\".\"expected_fee_centimes\" >= 0"
+        },
+        "settlement_lines_status_valid": {
+          "name": "settlement_lines_status_valid",
+          "value": "\"settlement_lines\".\"line_status\" IN ('matched', 'fee_mismatch', 'unmatched')"
+        },
+        "settlement_lines_created_at_iso": {
+          "name": "settlement_lines_created_at_iso",
+          "value": "\"settlement_lines\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "shipment_events": {
+      "name": "shipment_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "shipment_id": {
+          "name": "shipment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "courier_status": {
+          "name": "courier_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status_normalized": {
+          "name": "status_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "shipment_events_shipment_occurred_index": {
+          "name": "shipment_events_shipment_occurred_index",
+          "columns": ["shipment_id", "occurred_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "shipment_events_shipment_id_shipments_id_fk": {
+          "name": "shipment_events_shipment_id_shipments_id_fk",
+          "tableFrom": "shipment_events",
+          "tableTo": "shipments",
+          "columnsFrom": ["shipment_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "shipment_events_id_uuid_v7": {
+          "name": "shipment_events_id_uuid_v7",
+          "value": "length(\"shipment_events\".\"id\") = 36 AND substr(\"shipment_events\".\"id\", 9, 1) = '-' AND substr(\"shipment_events\".\"id\", 14, 1) = '-' AND substr(\"shipment_events\".\"id\", 15, 1) = '7' AND substr(\"shipment_events\".\"id\", 19, 1) = '-' AND lower(substr(\"shipment_events\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"shipment_events\".\"id\", 24, 1) = '-'"
+        },
+        "shipment_events_status_normalized_valid": {
+          "name": "shipment_events_status_normalized_valid",
+          "value": "\"shipment_events\".\"status_normalized\" IN ('created', 'picked', 'in_transit', 'out_for_delivery', 'delivered', 'refused', 'returned', 'lost')"
+        },
+        "shipment_events_occurred_at_iso": {
+          "name": "shipment_events_occurred_at_iso",
+          "value": "\"shipment_events\".\"occurred_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "shipment_events_payload_json": {
+          "name": "shipment_events_payload_json",
+          "value": "json_valid(\"shipment_events\".\"payload_json\")"
+        }
+      }
+    },
+    "shipments": {
+      "name": "shipments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "courier": {
+          "name": "courier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tracking_number": {
+          "name": "tracking_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "courier_status": {
+          "name": "courier_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status_normalized": {
+          "name": "status_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "delivery_fee_centimes": {
+          "name": "delivery_fee_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "return_fee_centimes": {
+          "name": "return_fee_centimes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "label_url": {
+          "name": "label_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "shipments_store_tracking_unique": {
+          "name": "shipments_store_tracking_unique",
+          "columns": ["store_id", "tracking_number"],
+          "isUnique": true
+        },
+        "shipments_store_order_unique": {
+          "name": "shipments_store_order_unique",
+          "columns": ["store_id", "order_id"],
+          "isUnique": true
+        },
+        "shipments_store_status_index": {
+          "name": "shipments_store_status_index",
+          "columns": ["store_id", "status_normalized"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "shipments_order_id_orders_id_fk": {
+          "name": "shipments_order_id_orders_id_fk",
+          "tableFrom": "shipments",
+          "tableTo": "orders",
+          "columnsFrom": ["order_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "shipments_id_uuid_v7": {
+          "name": "shipments_id_uuid_v7",
+          "value": "length(\"shipments\".\"id\") = 36 AND substr(\"shipments\".\"id\", 9, 1) = '-' AND substr(\"shipments\".\"id\", 14, 1) = '-' AND substr(\"shipments\".\"id\", 15, 1) = '7' AND substr(\"shipments\".\"id\", 19, 1) = '-' AND lower(substr(\"shipments\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"shipments\".\"id\", 24, 1) = '-'"
+        },
+        "shipments_status_normalized_valid": {
+          "name": "shipments_status_normalized_valid",
+          "value": "\"shipments\".\"status_normalized\" IN ('created', 'picked', 'in_transit', 'out_for_delivery', 'delivered', 'refused', 'returned', 'lost')"
+        },
+        "shipments_delivery_fee_valid": {
+          "name": "shipments_delivery_fee_valid",
+          "value": "\"shipments\".\"delivery_fee_centimes\" IS NULL OR (typeof(\"shipments\".\"delivery_fee_centimes\") = 'integer' AND \"shipments\".\"delivery_fee_centimes\" >= 0)"
+        },
+        "shipments_return_fee_valid": {
+          "name": "shipments_return_fee_valid",
+          "value": "\"shipments\".\"return_fee_centimes\" IS NULL OR (typeof(\"shipments\".\"return_fee_centimes\") = 'integer' AND \"shipments\".\"return_fee_centimes\" >= 0)"
+        },
+        "shipments_created_at_iso": {
+          "name": "shipments_created_at_iso",
+          "value": "\"shipments\".\"created_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "shipments_updated_at_iso": {
+          "name": "shipments_updated_at_iso",
+          "value": "\"shipments\".\"updated_at\" GLOB '????-??-??T??:??:??.???Z'"
+        }
+      }
+    },
+    "webhook_inbox": {
+      "name": "webhook_inbox",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_event_id": {
+          "name": "external_event_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "processed_at": {
+          "name": "processed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "webhook_inbox_store_source_event_unique": {
+          "name": "webhook_inbox_store_source_event_unique",
+          "columns": ["store_id", "source", "external_event_id"],
+          "isUnique": true
+        },
+        "webhook_inbox_unprocessed_index": {
+          "name": "webhook_inbox_unprocessed_index",
+          "columns": ["store_id", "processed_at", "received_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "webhook_inbox_id_uuid_v7": {
+          "name": "webhook_inbox_id_uuid_v7",
+          "value": "length(\"webhook_inbox\".\"id\") = 36 AND substr(\"webhook_inbox\".\"id\", 9, 1) = '-' AND substr(\"webhook_inbox\".\"id\", 14, 1) = '-' AND substr(\"webhook_inbox\".\"id\", 15, 1) = '7' AND substr(\"webhook_inbox\".\"id\", 19, 1) = '-' AND lower(substr(\"webhook_inbox\".\"id\", 20, 1)) GLOB '[89ab]' AND substr(\"webhook_inbox\".\"id\", 24, 1) = '-'"
+        },
+        "webhook_inbox_received_at_iso": {
+          "name": "webhook_inbox_received_at_iso",
+          "value": "\"webhook_inbox\".\"received_at\" GLOB '????-??-??T??:??:??.???Z'"
+        },
+        "webhook_inbox_processed_at_iso": {
+          "name": "webhook_inbox_processed_at_iso",
+          "value": "\"webhook_inbox\".\"processed_at\" IS NULL OR (\"webhook_inbox\".\"processed_at\" GLOB '????-??-??T??:??:??.???Z')"
+        },
+        "webhook_inbox_payload_json": {
+          "name": "webhook_inbox_payload_json",
+          "value": "json_valid(\"webhook_inbox\".\"payload_json\")"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
