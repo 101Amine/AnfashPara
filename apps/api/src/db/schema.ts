@@ -123,10 +123,18 @@ export const inventoryMovements = sqliteTable(
     quantity: integer('quantity').notNull(),
     reason: text('reason', { enum: INVENTORY_REASONS }).notNull(),
     reference: text('reference'),
+    operationReason: text('operation_reason', {
+      enum: ['purchase', 'damaged', 'expired', 'adjustment'],
+    }),
+    actor: text('actor'),
+    note: text('note'),
     createdAt: text('created_at').notNull(),
   },
   (table) => [
     index('inventory_store_sku_created_index').on(table.storeId, table.sku, table.createdAt),
+    uniqueIndex('inventory_admin_reference_unique')
+      .on(table.storeId, table.reference)
+      .where(sql`${table.operationReason} IS NOT NULL`),
     uniqueIndex('inventory_store_sku_reason_reference_unique').on(
       table.storeId,
       table.sku,

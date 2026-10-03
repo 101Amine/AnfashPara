@@ -21,6 +21,7 @@ import { registerSettlementPreviewRoutes } from './modules/settlements/settlemen
 import { registerReconciliationRoutes } from './modules/settlements/reconciliation.routes';
 import { registerOutboxRoutes } from './modules/outbox/outbox.routes';
 import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes';
+import { registerInventoryOperationsRoutes } from './modules/inventory/inventoryOperations.routes';
 import {
   processOutbox,
   type OutboxProcessorOptions,
@@ -63,6 +64,7 @@ export const createApp = (
   registerReconciliationRoutes(app);
   registerOutboxRoutes(app);
   registerDashboardRoutes(app);
+  registerInventoryOperationsRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),
