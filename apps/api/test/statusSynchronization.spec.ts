@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { AppBindings } from '../src/auth/cloudflareAccess';
 import worker, { runShipmentStatusPoll } from '../src/index';
+import { getStockBySku } from '../src/modules/inventory/inventory.service';
 import { mapCourierStatus } from '../src/modules/status-sync/courierStatus.mapper';
 import { pollOpenShipments } from '../src/modules/status-sync/statusPolling.service';
 
@@ -13,6 +14,7 @@ const CUSTOMER_ID = 'customer-1';
 const ORDER_ID = 'order-1';
 const SHIPMENT_ID = 'shipment-1';
 const TRACKING_NUMBER = 'TRACK-101';
+const SKU = 'BIO-OIL-125ML';
 const OCCURRED_AT = '2026-10-03T12:00:00.000Z';
 
 beforeEach(async () => resetDatabase('PACKED'));
@@ -47,18 +49,24 @@ describe('POST /api/webhooks/courier', () => {
     await expect(first.json()).resolves.toEqual({ duplicate: false, orderStatus: 'DELIVERED' });
     await expect(readOrderStatus()).resolves.toBe('DELIVERED');
     await expect(readCustomerCounters()).resolves.toEqual({ delivered_count: 1, refused_count: 0 });
+    await expect(getStockBySku(env.DB, SKU)).resolves.toBe(8);
+    await expect(readInventoryMovements()).resolves.toEqual([
+      { quantity: 10, reason: 'purchase', reference: 'PO-TEST-1', sku: SKU },
+      { quantity: -2, reason: 'shipped', reference: `order:${ORDER_ID}:shipped`, sku: SKU },
+    ]);
     await expect(rowCount('shipment_events')).resolves.toBe(1);
     await expect(rowCount('order_events')).resolves.toBe(2);
 
     const replay = await postWebhook(rawPayload, signature);
     await expect(replay.json()).resolves.toEqual({ duplicate: true });
     await expect(readCustomerCounters()).resolves.toEqual({ delivered_count: 1, refused_count: 0 });
+    await expect(getStockBySku(env.DB, SKU)).resolves.toBe(8);
+    await expect(rowCount('inventory_movements')).resolves.toBe(2);
     await expect(rowCount('shipment_events')).resolves.toBe(1);
     await expect(rowCount('order_events')).resolves.toBe(2);
   });
 
   it('applies REFUSED and RETURNED using the guarded state machine', async () => {
-    await env.DB.prepare("UPDATE orders SET status = 'SHIPPED' WHERE id = ?").bind(ORDER_ID).run();
     const refused = webhookPayload('event-refused', 'REFUSED');
     expect((await postWebhook(refused, await sign(refused))).status).toBe(200);
     await expect(readOrderStatus()).resolves.toBe('REFUSED');
@@ -67,14 +75,28 @@ describe('POST /api/webhooks/courier', () => {
     expect((await postWebhook(returned, await sign(returned))).status).toBe(200);
     await expect(readOrderStatus()).resolves.toBe('RETURNED');
     await expect(readCustomerCounters()).resolves.toEqual({ delivered_count: 0, refused_count: 1 });
+    await expect(getStockBySku(env.DB, SKU)).resolves.toBe(10);
 
     const events = await env.DB.prepare(
       'SELECT from_status, to_status, actor FROM order_events ORDER BY created_at, rowid',
     ).all();
     expect(events.results).toEqual([
+      { actor: 'courier:test-courier', from_status: 'PACKED', to_status: 'SHIPPED' },
       { actor: 'courier:test-courier', from_status: 'SHIPPED', to_status: 'REFUSED' },
       { actor: 'courier:test-courier', from_status: 'REFUSED', to_status: 'RETURNED' },
     ]);
+  });
+
+  it('rolls back the order event when its inventory movement cannot commit', async () => {
+    await env.DB.prepare('DROP TABLE inventory_movements').run();
+    const rawPayload = webhookPayload('event-atomic-failure', 'DELIVERED');
+    const response = await postWebhook(rawPayload, await sign(rawPayload));
+
+    expect(response.status).toBe(503);
+    await expect(readOrderStatus()).resolves.toBe('PACKED');
+    await expect(rowCount('order_events')).resolves.toBe(0);
+    await expect(rowCount('webhook_inbox')).resolves.toBe(0);
+    await expect(rowCount('shipment_events')).resolves.toBe(0);
   });
 
   it('rejects SETTLED and never changes an order to that status', async () => {
@@ -92,7 +114,6 @@ describe('POST /api/webhooks/courier', () => {
 
 describe('scheduled shipment polling fallback', () => {
   it('runs through the scheduled Worker path and uses replay-safe synchronization', async () => {
-    await env.DB.prepare("UPDATE orders SET status = 'SHIPPED' WHERE id = ?").bind(ORDER_ID).run();
     const courierStatus = {
       occurredAt: OCCURRED_AT,
       rawStatus: 'DELIVERED',
@@ -129,6 +150,7 @@ describe('scheduled shipment polling fallback', () => {
     });
     await expect(rowCount('shipment_events')).resolves.toBe(1);
     await expect(readCustomerCounters()).resolves.toEqual({ delivered_count: 1, refused_count: 0 });
+    await expect(getStockBySku(env.DB, SKU)).resolves.toBe(8);
   });
 
   it('does not poll operator-managed deliveries in manual mode', async () => {
@@ -158,7 +180,9 @@ async function resetDatabase(orderStatus: string): Promise<void> {
   const statements = [
     'DROP TABLE IF EXISTS shipment_events',
     'DROP TABLE IF EXISTS shipments',
+    'DROP TABLE IF EXISTS inventory_movements',
     'DROP TABLE IF EXISTS order_events',
+    'DROP TABLE IF EXISTS order_items',
     'DROP TABLE IF EXISTS orders',
     'DROP TABLE IF EXISTS customers',
     'DROP TABLE IF EXISTS webhook_inbox',
@@ -170,6 +194,17 @@ async function resetDatabase(orderStatus: string): Promise<void> {
       id TEXT PRIMARY KEY, store_id TEXT NOT NULL, customer_id TEXT NOT NULL,
       status TEXT NOT NULL, shipped_at TEXT, closed_at TEXT, updated_at TEXT NOT NULL
     )`,
+    `CREATE TABLE order_items (
+      id TEXT PRIMARY KEY, store_id TEXT NOT NULL, order_id TEXT NOT NULL,
+      sku TEXT NOT NULL, quantity INTEGER NOT NULL
+    )`,
+    `CREATE TABLE inventory_movements (
+      id TEXT PRIMARY KEY, store_id TEXT NOT NULL, sku TEXT NOT NULL,
+      quantity INTEGER NOT NULL, reason TEXT NOT NULL, reference TEXT,
+      created_at TEXT NOT NULL
+    )`,
+    `CREATE UNIQUE INDEX inventory_store_sku_reason_reference_unique
+      ON inventory_movements (store_id, sku, reason, reference)`,
     `CREATE TABLE shipments (
       id TEXT PRIMARY KEY, store_id TEXT NOT NULL, order_id TEXT NOT NULL,
       courier TEXT NOT NULL, tracking_number TEXT NOT NULL, courier_status TEXT,
@@ -206,6 +241,22 @@ async function resetDatabase(orderStatus: string): Promise<void> {
       'para-main',
       CUSTOMER_ID,
       orderStatus,
+      '2026-10-03T00:00:00.000Z',
+    ),
+    env.DB.prepare('INSERT INTO order_items VALUES (?, ?, ?, ?, ?)').bind(
+      'item-1',
+      'para-main',
+      ORDER_ID,
+      SKU,
+      2,
+    ),
+    env.DB.prepare('INSERT INTO inventory_movements VALUES (?, ?, ?, ?, ?, ?, ?)').bind(
+      'movement-purchase-1',
+      'para-main',
+      SKU,
+      10,
+      'purchase',
+      'PO-TEST-1',
       '2026-10-03T00:00:00.000Z',
     ),
     env.DB.prepare('INSERT INTO shipments VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(
@@ -269,6 +320,15 @@ async function readCustomerCounters(): Promise<{
   return env.DB.prepare('SELECT delivered_count, refused_count FROM customers WHERE id = ?')
     .bind(CUSTOMER_ID)
     .first();
+}
+
+async function readInventoryMovements(): Promise<
+  { quantity: number; reason: string; reference: string; sku: string }[]
+> {
+  const result = await env.DB.prepare(
+    'SELECT sku, quantity, reason, reference FROM inventory_movements ORDER BY created_at, rowid',
+  ).all<{ quantity: number; reason: string; reference: string; sku: string }>();
+  return result.results;
 }
 
 async function rowCount(table: string): Promise<number> {

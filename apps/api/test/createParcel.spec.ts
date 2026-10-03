@@ -40,6 +40,7 @@ beforeEach(async () => {
   for (const statement of [
     'DROP TABLE IF EXISTS order_events',
     'DROP TABLE IF EXISTS shipments',
+    'DROP TABLE IF EXISTS inventory_movements',
     'DROP TABLE IF EXISTS order_items',
     'DROP TABLE IF EXISTS orders',
     'DROP TABLE IF EXISTS customers',
@@ -103,6 +104,16 @@ beforeEach(async () => {
       reason TEXT,
       payload_json TEXT,
       created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE inventory_movements (
+      id TEXT PRIMARY KEY NOT NULL,
+      store_id TEXT NOT NULL,
+      sku TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      reason TEXT NOT NULL,
+      reference TEXT,
+      created_at TEXT NOT NULL,
+      UNIQUE(store_id, sku, reason, reference)
     )`,
   ]) {
     await env.DB.prepare(statement).run();
@@ -251,6 +262,9 @@ describe('create parcel workflow', () => {
     )
       .bind(ORDER_ID)
       .all<Record<string, unknown>>();
+    const movements = await env.DB.prepare(
+      'SELECT sku, quantity, reason, reference FROM inventory_movements ORDER BY rowid',
+    ).all<Record<string, unknown>>();
 
     expect(order?.status).toBe('SHIPPED');
     expect(order?.shipped_at).not.toBeNull();
@@ -261,6 +275,14 @@ describe('create parcel workflow', () => {
         to_status: 'PACKED',
       },
       { actor: 'courier:fake-courier', from_status: 'PACKED', to_status: 'SHIPPED' },
+    ]);
+    expect(movements.results).toEqual([
+      {
+        quantity: -2,
+        reason: 'shipped',
+        reference: `order:${ORDER_ID}:shipped`,
+        sku: 'BIO-OIL-125ML',
+      },
     ]);
   });
 
@@ -307,6 +329,7 @@ describe('create parcel workflow', () => {
     });
     expect(await readOrderStatus()).toBe('CONFIRMED');
     expect(await countShipments()).toBe(0);
+    expect(await rowCount('inventory_movements')).toBe(0);
 
     const retryClient = successfulClient();
     expect((await postParcel(retryClient)).status).toBe(303);
@@ -422,6 +445,13 @@ async function readOrderStatus(): Promise<string | undefined> {
 async function countShipments(): Promise<number> {
   return (
     (await env.DB.prepare('SELECT COUNT(*) AS count FROM shipments').first<{ count: number }>())
+      ?.count ?? 0
+  );
+}
+
+async function rowCount(table: string): Promise<number> {
+  return (
+    (await env.DB.prepare(`SELECT COUNT(*) AS count FROM ${table}`).first<{ count: number }>())
       ?.count ?? 0
   );
 }

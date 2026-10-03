@@ -227,9 +227,12 @@
       <g id="data-operations">
         <rect x="870" y="1070" width="245" height="130" rx="10" fill="#ffffff" stroke="#b6c8e3"/>
         <text x="888" y="1097" font-size="14" font-weight="700">Operations &amp; finance</text>
-        <text x="888" y="1122" class="node-small">inventory_movements · shipments</text>
-        <text x="888" y="1143" class="node-small">shipment_events · outbox · inbox</text>
-        <text x="888" y="1164" class="node-small">settlements · lines · ad spend</text>
+        <g id="module-inventory-ledger" data-status="implemented">
+          <text x="888" y="1122" class="node-small">inventory_movements · Σ quantity</text>
+          <text x="888" y="1143" class="node-small">Append-only ship/return ledger</text>
+        </g>
+        <text x="888" y="1164" class="node-small">shipments · events · inbox/outbox</text>
+        <text x="888" y="1185" class="node-small">settlements · lines · ad spend</text>
       </g>
     </g>
   </g>
@@ -251,7 +254,7 @@
       <rect x="1235" y="305" width="280" height="100" class="rail-node"/>
       <text x="1255" y="335" class="rail-node-title">GitHub Actions CI</text>
       <text x="1255" y="359" class="rail-copy">Frozen install · lint · typecheck</text>
-      <text x="1255" y="381" class="rail-copy">338 automated tests passing</text>
+      <text x="1255" y="381" class="rail-copy">346 automated tests passing</text>
     </g>
 
     <path d="M1375 405 L1375 445" class="rail-flow"/>
