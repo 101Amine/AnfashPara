@@ -8,6 +8,7 @@ import {
 } from '@para/core';
 
 import { createUuidV7 } from '../../shared/uuidV7';
+import { createOrderInventoryMovementStatements } from '../inventory/inventory.service';
 
 const STORE_ID = 'para-main';
 
@@ -162,6 +163,16 @@ export async function createParcelForOrder(
           }),
           timestamp,
         ),
+    );
+  }
+
+  if (finalStatus === 'SHIPPED') {
+    statements.push(
+      ...(await createOrderInventoryMovementStatements(database, {
+        occurredAt: timestamp,
+        orderId: order.id,
+        reason: 'shipped',
+      })),
     );
   }
 
