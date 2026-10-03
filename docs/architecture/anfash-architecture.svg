@@ -135,19 +135,25 @@
       <text x="600" y="604" class="node-small">/api/health · /api/version</text>
       <text x="600" y="626" class="node-small">/api/products · /api/settings</text>
       <text x="600" y="648" class="node-small">/admin/orders + parcel actions</text>
-      <text x="600" y="668" class="node-small">POST /api/webhooks/orders</text>
+      <text x="600" y="668" class="node-small">Signed order + courier webhooks</text>
     </g>
 
     <g id="module-order-ingestion" data-status="implemented">
-      <rect x="880" y="550" width="260" height="58" class="node implemented"/>
-      <text x="900" y="574" class="node-title">Order ingestion</text>
-      <text x="900" y="596" class="node-copy">Signed webhook · atomic D1</text>
+      <rect x="880" y="550" width="125" height="58" class="node implemented"/>
+      <text x="892" y="574" class="node-title">Order ingest</text>
+      <text x="892" y="596" class="node-small">Atomic D1</text>
     </g>
 
     <g id="module-create-parcel" data-status="implemented">
+      <rect x="1015" y="550" width="125" height="58" class="node implemented"/>
+      <text x="1027" y="574" class="node-title">Create parcel</text>
+      <text x="1027" y="596" class="node-small">Manual/API</text>
+    </g>
+
+    <g id="module-status-sync" data-status="implemented">
       <rect x="880" y="617" width="260" height="58" class="node implemented"/>
-      <text x="900" y="641" class="node-title">Create parcel</text>
-      <text x="900" y="663" class="node-copy">Manual first · API optional</text>
+      <text x="900" y="641" class="node-title">Courier status sync</text>
+      <text x="900" y="663" class="node-copy">Signed webhook · polling fallback</text>
     </g>
   </g>
 

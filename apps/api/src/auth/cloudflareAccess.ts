@@ -10,6 +10,7 @@ export type AppBindings = Omit<ApiBindings, 'COURIER_MODE' | 'COURIER_NAME'> & {
   COURIER_API_URL?: string;
   COURIER_MODE?: string;
   COURIER_NAME?: string;
+  COURIER_WEBHOOK_SECRET?: string;
   ORDER_WEBHOOK_SECRET?: string;
 };
 

@@ -13,6 +13,11 @@ import { registerAdminOrdersRoutes } from './modules/admin-orders/adminOrders.ro
 import { registerConfirmationRoutes } from './modules/confirmation/confirmation.routes';
 import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
 import { registerParcelRoutes } from './modules/shipping/parcel.routes';
+import { registerCourierWebhookRoutes } from './modules/status-sync/courierWebhook.routes';
+import {
+  pollOpenShipments,
+  type PollingSummary,
+} from './modules/status-sync/statusPolling.service';
 
 const STORE_ID = 'para-main';
 const READ_CACHE_CONTROL = 'public, max-age=60';
@@ -37,6 +42,7 @@ export const createApp = (
   registerConfirmationRoutes(app);
   registerParcelRoutes(app, courierClientFactory);
   registerOrderWebhookRoutes(app);
+  registerCourierWebhookRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),
@@ -134,21 +140,45 @@ export const createApp = (
 
 const app = createApp();
 
+export async function runShipmentStatusPoll(
+  env: AppEnvironment['Bindings'],
+  courierClientFactory: CourierClientFactory = createCourierClientFromBindings,
+): Promise<PollingSummary & { reason?: 'database_unavailable' | 'manual_mode' }> {
+  if (!env.DB) return { failed: 0, processed: 0, reason: 'database_unavailable', skipped: 0 };
+  if ((env.COURIER_MODE?.trim() || 'manual') === 'manual') {
+    return { failed: 0, processed: 0, reason: 'manual_mode', skipped: 0 };
+  }
+  return pollOpenShipments(env.DB, courierClientFactory(env));
+}
+
 export default {
   fetch: app.fetch,
   scheduled(controller, env, ctx): void {
     ctx.waitUntil(
-      Promise.resolve().then(() => {
-        console.log(
-          JSON.stringify({
-            cron: controller.cron,
-            environment: env.ENVIRONMENT,
-            event: 'scheduled',
-            gitSha: env.GIT_SHA,
-            scheduledTime: new Date(controller.scheduledTime).toISOString(),
-          }),
-        );
-      }),
+      runShipmentStatusPoll(env)
+        .then((summary) => {
+          console.log(
+            JSON.stringify({
+              cron: controller.cron,
+              environment: env.ENVIRONMENT,
+              event: 'scheduled',
+              gitSha: env.GIT_SHA,
+              shipmentStatusPoll: summary,
+              scheduledTime: new Date(controller.scheduledTime).toISOString(),
+            }),
+          );
+        })
+        .catch(() => {
+          console.error(
+            JSON.stringify({
+              cron: controller.cron,
+              environment: env.ENVIRONMENT,
+              event: 'shipment_status_poll_failed',
+              gitSha: env.GIT_SHA,
+              scheduledTime: new Date(controller.scheduledTime).toISOString(),
+            }),
+          );
+        }),
     );
   },
 } satisfies ExportedHandler<AppEnvironment['Bindings']>;
