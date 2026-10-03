@@ -8,8 +8,16 @@ import orderResponse from './fixtures/contracts/order-create.response.json';
 import shipmentRequest from './fixtures/contracts/shipment-create.request.json';
 import shipmentResponse from './fixtures/contracts/shipment-create.response.json';
 import shipmentEvents from './fixtures/contracts/shipment-status-events.json';
+import productsResponse from './fixtures/contracts/products.response.json';
 
-const fixtures = [orderRequest, orderResponse, shipmentRequest, shipmentResponse, shipmentEvents];
+const fixtures = [
+  orderRequest,
+  orderResponse,
+  shipmentRequest,
+  shipmentResponse,
+  shipmentEvents,
+  productsResponse,
+];
 
 describe('internal API contract fixtures', () => {
   it('uses a first-party idempotency header instead of a fake webhook signature', () => {

@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { AppBindings } from '../src/auth/cloudflareAccess';
 import worker from '../src/index';
 import { resetOrderDatabase, rowCount } from './helpers/orderDatabase';
+import catalogueFixture from './fixtures/contracts/products.response.json';
+import checkoutFixture from './fixtures/contracts/order-create.request.json';
 
 const payload = {
   attribution: {
@@ -34,6 +36,77 @@ beforeEach(async () => {
 });
 
 describe('POST /api/orders', () => {
+  async function catalogue() {
+    const response = await worker.fetch(
+      new Request('https://example.com/api/products'),
+      { ...env },
+      createExecutionContext(),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=60');
+    return response.json<typeof catalogueFixture>();
+  }
+
+  it('exposes only the public catalogue contract, including checkout SKUs', async () => {
+    const body = await catalogue();
+    expect(body).toEqual(catalogueFixture);
+    for (const product of body.products)
+      expect(Object.keys(product).sort()).toEqual(['id', 'name', 'priceCentimes', 'sku', 'slug']);
+  });
+
+  it('creates an order using SKUs returned by the catalogue without an ID mapping', async () => {
+    const { products } = await catalogue();
+    const items = products.map((product) => ({ sku: product.sku, quantity: 1 }));
+    const response = await postOrder(
+      { customer: checkoutFixture.customer, items },
+      'catalogue-checkout-001',
+    );
+    expect(response.status).toBe(201);
+    const receipt = await response.json<{
+      orderId: string;
+      codAmountCentimes: number;
+      status: string;
+    }>();
+    expect(receipt.codAmountCentimes).toBe(
+      products.reduce((total, product) => total + product.priceCentimes, 0),
+    );
+    expect(receipt.status).toBe('CONFIRMING');
+    const stored = await env.DB.prepare(
+      'SELECT sku, quantity FROM order_items WHERE order_id = ? ORDER BY sku',
+    )
+      .bind(receipt.orderId)
+      .all();
+    expect(stored.results).toEqual(items);
+  });
+
+  it('reloads authoritative prices even when the customer read a cached catalogue price', async () => {
+    const { products } = await catalogue();
+    const product = products[0]!;
+    await env.DB.prepare('UPDATE products SET price_centimes = price_centimes + 100 WHERE sku = ?')
+      .bind(product.sku)
+      .run();
+    const response = await postOrder(
+      { customer: checkoutFixture.customer, items: [{ sku: product.sku, quantity: 1 }] },
+      'catalogue-reprice-001',
+    );
+    expect(response.status).toBe(201);
+    const receipt = await response.json<{ codAmountCentimes: number }>();
+    expect(receipt.codAmountCentimes).toBe(product.priceCentimes + 100);
+  });
+
+  it('rejects a previously listed SKU if the product becomes inactive before checkout', async () => {
+    const { products } = await catalogue();
+    const product = products[0]!;
+    await env.DB.prepare('UPDATE products SET active = 0 WHERE sku = ?').bind(product.sku).run();
+    const response = await postOrder(
+      { customer: checkoutFixture.customer, items: [{ sku: product.sku, quantity: 1 }] },
+      'catalogue-inactive-001',
+    );
+    expect(response.status).toBe(422);
+    expect((await catalogue()).products.map((item) => item.sku)).not.toContain(product.sku);
+    expect(await rowCount(env.DB, 'orders')).toBe(0);
+    expect(await rowCount(env.DB, 'webhook_inbox')).toBe(0);
+  });
   it('requires a valid idempotency key', async () => {
     const response = await postOrder(payload, undefined);
 

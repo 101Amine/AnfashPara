@@ -12,6 +12,46 @@ Storefront client --POST /api/orders--> Hono --transaction--> D1
 Admin client --POST /admin/...-------> Hono --transaction--> D1
 ```
 
+## Public catalogue — W4-01
+
+`GET /api/products` returns active products for `para-main`, ordered by name.
+The response explicitly selects only `id`, `sku`, `slug`, `name` and `priceCentimes`:
+
+```json
+{
+  "products": [
+    {
+      "id": "bio-oil",
+      "sku": "BIO-OIL-125ML",
+      "slug": "bio-oil",
+      "name": "Bio Oil",
+      "priceCentimes": 8900
+    }
+  ]
+}
+```
+
+- **ID:** database record identity; not the checkout item identifier.
+- **SKU:** stable sellable-item reference used by checkout, order items and inventory.
+  Keep it stable once referenced; changing display copy or a URL must not change it.
+- **Slug:** readable URL identifier, not an inventory or checkout key.
+
+The storefront can build `items: [{ sku: product.sku, quantity: 1 }]` directly from
+the catalogue response. It must not submit product prices, COGS or totals. This is an
+additive response field: existing fields and `Cache-Control: public, max-age=60`
+remain unchanged. COGS, stock/reservations, store IDs, timestamps and audit details
+are not included in the public projection.
+
+A cached price is display information, not a binding backend input: checkout reloads
+the current D1 price and active flag, freezes current price/COGS, and returns the
+authoritative COD. A SKU that became inactive or disappeared returns a controlled
+422 without partial order writes. The future frontend should show the returned amount
+and handle changes explicitly. Public availability/reservations are outside W4-01.
+
+The sanitized `apps/api/test/fixtures/contracts/products.response.json` is asserted
+against the Worker response. Integration tests use its returned SKUs to create orders,
+verify the exact public-field allowlist, and cover changed prices and deactivation.
+
 ## Order creation
 
 `POST /api/orders`
@@ -96,19 +136,19 @@ Fixtures:
 
 ## Missing or unreliable fields
 
-| Field               | Reliability                     | Decision                                                              |
-| ------------------- | ------------------------------- | --------------------------------------------------------------------- |
-| Phone               | User-entered and often spaced   | Normalize and validate Moroccan mobile format server-side             |
-| City                | User-entered unless constrained | Replace with an allowed-city identifier when delivery zones exist     |
-| Address             | Free text                       | Required but operationally unverified until confirmation              |
-| Customer name       | Free text                       | Display value only; do not use as identity                            |
-| Note                | Optional free text              | Sanitize for display; never interpret as instructions to backend code |
-| UTM values          | Optional and client-controlled  | Useful attribution metadata, never authorization or billing evidence  |
-| SKU                 | Client-controlled               | Must exist and be active; server loads price and COGS                 |
-| Quantity            | Client-controlled               | Positive bounded integer; server checks availability                  |
-| Idempotency key     | Client-generated                | Unique per checkout attempt; bind it to a request hash                |
-| Shipment event time | Admin/test supplied             | Store received time separately; reject malformed/future-skewed values |
-| Tracking number     | Manual during this phase        | Enforce uniqueness per store                                          |
+| Field               | Reliability                     | Decision                                                                        |
+| ------------------- | ------------------------------- | ------------------------------------------------------------------------------- |
+| Phone               | User-entered and often spaced   | Normalize and validate Moroccan mobile format server-side                       |
+| City                | User-entered unless constrained | Replace with an allowed-city identifier when delivery zones exist               |
+| Address             | Free text                       | Required but operationally unverified until confirmation                        |
+| Customer name       | Free text                       | Display value only; do not use as identity                                      |
+| Note                | Optional free text              | Sanitize for display; never interpret as instructions to backend code           |
+| UTM values          | Optional and client-controlled  | Useful attribution metadata, never authorization or billing evidence            |
+| SKU                 | Client-controlled               | Must exist and be active; server loads price and COGS                           |
+| Quantity            | Client-controlled               | Positive bounded integer; stock availability/reservation is not implemented yet |
+| Idempotency key     | Client-generated                | Unique per checkout attempt; bind it to a request hash                          |
+| Shipment event time | Admin/test supplied             | Store received time separately; reject malformed/future-skewed values           |
+| Tracking number     | Manual during this phase        | Enforce uniqueness per store                                                    |
 
 ## Credentials and secrets
 

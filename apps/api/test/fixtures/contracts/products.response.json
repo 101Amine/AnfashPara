@@ -1,0 +1,18 @@
+{
+  "products": [
+    {
+      "id": "bio-oil",
+      "name": "Bio Oil",
+      "priceCentimes": 8900,
+      "sku": "BIO-OIL-125ML",
+      "slug": "bio-oil"
+    },
+    {
+      "id": "mustela",
+      "name": "Mustela",
+      "priceCentimes": 10900,
+      "sku": "MUSTELA-250ML",
+      "slug": "mustela"
+    }
+  ]
+}
