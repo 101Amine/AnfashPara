@@ -124,6 +124,12 @@ This proves revocation/restoration of the token's **application grant**, not per
 destruction of the token resource. The resource remains active until its recorded
 expiry or explicit revocation. Rotation/revocation procedure below still applies.
 
+After merging the manual-fee/browser-policy fix, the
+[post-fix run](https://github.com/101Amine/AnfashPara/actions/runs/37160308284)
+passed and archived nonce `cf3b159d8c3941c48f6c110ed95d07f9` against deployed SHA
+`52c63c62e01a779e8d7a54f85480e1f5bc961f8f`. This independently confirms the
+restricted machine client still works after the browser form change.
+
 | Case               | Final status | Attempts | Shipment events | Inventory movements | Order events |
 | ------------------ | ------------ | -------- | --------------- | ------------------- | ------------ |
 | delivered          | DELIVERED    | 1        | 2               | 1                   | 5            |
