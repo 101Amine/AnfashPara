@@ -141,6 +141,19 @@ export async function renderAdminOrdersPage(
             color: #607067;
             font-size: 13px;
           }
+          .batch-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            border: 1px solid #dce5df;
+            border-radius: 14px;
+            background: #fff;
+          }
+          .batch-actions button {
+            align-self: auto;
+          }
           .orders {
             display: grid;
             gap: 10px;
@@ -266,6 +279,33 @@ export async function renderAdminOrdersPage(
             background: #1d5bbf;
             color: #fff;
           }
+          .action-label {
+            background: #304f7a;
+            color: #fff;
+          }
+          .label-choice {
+            display: inline-flex;
+            grid-template-columns: none;
+            align-items: center;
+            gap: 7px;
+            min-height: 40px;
+            padding: 0 10px;
+            border: 1px solid #c9d6ce;
+            border-radius: 9px;
+            color: #31473a;
+            font-size: 13px;
+          }
+          .label-choice input {
+            width: auto;
+          }
+          .label-missing {
+            display: inline-flex;
+            align-items: center;
+            min-height: 40px;
+            color: #8a5700;
+            font-size: 13px;
+            font-weight: 750;
+          }
           .action-missed,
           .action-callback {
             background: #fff3d9;
@@ -295,6 +335,10 @@ export async function renderAdminOrdersPage(
               grid-template-columns: 1fr;
             }
             .filters button {
+              width: 100%;
+            }
+            .batch-actions,
+            .batch-actions button {
               width: 100%;
             }
             .order {
@@ -371,6 +415,15 @@ export async function renderAdminOrdersPage(
 
           <div class="summary">${model.page.orders.length} commande(s) sur cette page</div>
 
+          <form id="label-batch-form" class="batch-actions" method="post">
+            <button type="submit" formaction="/admin/labels/batch" formtarget="_blank">
+              Imprimer les étiquettes sélectionnées
+            </button>
+            <button type="submit" formaction="/admin/labels/batch/download">
+              Télécharger la sélection (.zip)
+            </button>
+          </form>
+
           <section class="orders" aria-label="Commandes">
             ${
               model.page.orders.length === 0
@@ -423,45 +476,74 @@ export async function renderAdminOrdersPage(
 function renderOrderActions(
   order: AdminOrderListItem,
 ): HtmlEscapedString | Promise<HtmlEscapedString> | string {
-  if (order.status === 'CONFIRMED') {
-    return html`<div class="actions" aria-label="Actions d'expédition">
-      <form method="post" action="${`/admin/orders/${order.id}/parcel`}">
-        <button class="action action-parcel" type="submit">Créer le colis</button>
-      </form>
-    </div>`;
-  }
-  if (order.status !== 'CONFIRMING' && order.status !== 'NO_ANSWER') return '';
-
   const endpoint = `/admin/orders/${order.id}/confirmation`;
-  return html`<div class="actions" aria-label="Actions de confirmation">
-    <form method="post" action="${endpoint}">
-      <input type="hidden" name="action" value="confirmed" />
-      <input type="hidden" name="channel" value="call" />
-      <button class="action action-confirm" type="submit">Confirmé</button>
-    </form>
-    <form method="post" action="${endpoint}">
-      <input type="hidden" name="action" value="no_answer" />
-      <input type="hidden" name="channel" value="call" />
-      <button class="action action-missed" type="submit">Pas de réponse</button>
-    </form>
-    <form method="post" action="${endpoint}">
-      <input type="hidden" name="action" value="cancelled" />
-      <input type="hidden" name="channel" value="call" />
-      <button class="action action-cancel" type="submit">Annulé</button>
-    </form>
-    <form method="post" action="${endpoint}">
-      <input type="hidden" name="action" value="callback" />
-      <input type="hidden" name="channel" value="call" />
-      <button class="action action-callback" type="submit">Rappeler</button>
-    </form>
-    <a
-      class="whatsapp"
-      href="${buildWhatsAppConfirmationUrl(order)}"
-      target="_blank"
-      rel="noopener noreferrer"
-      >Ouvrir WhatsApp</a
-    >
+  const hasConfirmationActions = order.status === 'CONFIRMING' || order.status === 'NO_ANSWER';
+  if (order.status !== 'CONFIRMED' && !hasConfirmationActions && order.shipmentId === null)
+    return '';
+
+  return html`<div class="actions" aria-label="Actions de la commande">
+    ${
+      order.status === 'CONFIRMED'
+        ? html`<form method="post" action="${`/admin/orders/${order.id}/parcel`}">
+            <button class="action action-parcel" type="submit">Créer le colis</button>
+          </form>`
+        : ''
+    }
+    ${
+      hasConfirmationActions
+        ? html`<form method="post" action="${endpoint}">
+              <input type="hidden" name="action" value="confirmed" />
+              <input type="hidden" name="channel" value="call" />
+              <button class="action action-confirm" type="submit">Confirmé</button>
+            </form>
+            <form method="post" action="${endpoint}">
+              <input type="hidden" name="action" value="no_answer" />
+              <input type="hidden" name="channel" value="call" />
+              <button class="action action-missed" type="submit">Pas de réponse</button>
+            </form>
+            <form method="post" action="${endpoint}">
+              <input type="hidden" name="action" value="cancelled" />
+              <input type="hidden" name="channel" value="call" />
+              <button class="action action-cancel" type="submit">Annulé</button>
+            </form>
+            <form method="post" action="${endpoint}">
+              <input type="hidden" name="action" value="callback" />
+              <input type="hidden" name="channel" value="call" />
+              <button class="action action-callback" type="submit">Rappeler</button>
+            </form>
+            <a
+              class="whatsapp"
+              href="${buildWhatsAppConfirmationUrl(order)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Ouvrir WhatsApp</a
+            >`
+        : ''
+    }
+    ${renderLabelActions(order)}
   </div>`;
+}
+
+function renderLabelActions(
+  order: AdminOrderListItem,
+): HtmlEscapedString | Promise<HtmlEscapedString> | string {
+  if (order.shipmentId === null) return '';
+  if (!order.shipmentLabelAvailable) {
+    return html`<span class="label-missing">Étiquette indisponible</span>`;
+  }
+
+  const labelUrl = `/admin/shipments/${order.shipmentId}/label`;
+  return html`<label class="label-choice">
+      <input
+        form="label-batch-form"
+        type="checkbox"
+        name="shipmentId"
+        value="${order.shipmentId}"
+      />
+      Sélectionner
+    </label>
+    <a class="action action-label" href="${labelUrl}" target="_blank" rel="noopener">Voir</a>
+    <a class="action action-label" href="${`${labelUrl}?download=1`}">Télécharger</a>`;
 }
 
 function buildNextPageUrl(query: AdminOrdersQuery, cursor: string | null): string | null {

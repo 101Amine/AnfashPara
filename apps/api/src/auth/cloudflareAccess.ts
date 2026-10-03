@@ -8,6 +8,7 @@ export type AppBindings = Omit<ApiBindings, 'COURIER_MODE' | 'COURIER_NAME'> & {
   COURIER_ACCOUNT_ID?: string;
   COURIER_API_TOKEN?: string;
   COURIER_API_URL?: string;
+  COURIER_LABEL_ORIGINS?: string;
   COURIER_MODE?: string;
   COURIER_NAME?: string;
   COURIER_WEBHOOK_SECRET?: string;
