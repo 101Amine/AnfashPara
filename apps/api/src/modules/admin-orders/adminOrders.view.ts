@@ -387,6 +387,7 @@ export async function renderAdminOrdersPage(
               Connecté·e : ${model.identityEmail}<br />
               <a href="/admin/settlements">Aperçu des règlements</a>
               <a href="/admin/outbox">Tâches différées</a>
+              <a href="/admin/dashboard">Tableau de bord</a>
             </div>
           </header>
 

@@ -20,6 +20,7 @@ import { registerParcelRoutes } from './modules/shipping/parcel.routes';
 import { registerSettlementPreviewRoutes } from './modules/settlements/settlementPreview.routes';
 import { registerReconciliationRoutes } from './modules/settlements/reconciliation.routes';
 import { registerOutboxRoutes } from './modules/outbox/outbox.routes';
+import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes';
 import {
   processOutbox,
   type OutboxProcessorOptions,
@@ -61,6 +62,7 @@ export const createApp = (
   registerSettlementPreviewRoutes(app);
   registerReconciliationRoutes(app);
   registerOutboxRoutes(app);
+  registerDashboardRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),
