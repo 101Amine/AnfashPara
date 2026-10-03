@@ -135,14 +135,15 @@
       <text x="600" y="604" class="node-small">/api/health · /api/version</text>
       <text x="600" y="626" class="node-small">/api/products · /api/settings</text>
       <text x="600" y="648" class="node-small">/admin/whoami</text>
+      <text x="600" y="668" class="node-small">POST /api/webhooks/orders</text>
     </g>
 
-    <g id="module-order-api" data-status="planned">
-      <rect x="880" y="550" width="260" height="125" class="node planned"/>
-      <text x="900" y="580" class="node-title">Order API</text>
-      <text x="900" y="604" class="node-copy">POST /api/orders</text>
-      <text x="900" y="626" class="node-copy">Contract defined; route not built</text>
-      <text x="900" y="648" class="node-copy">Server prices items from D1</text>
+    <g id="module-order-ingestion" data-status="implemented">
+      <rect x="880" y="550" width="260" height="125" class="node implemented"/>
+      <text x="900" y="580" class="node-title">Order ingestion</text>
+      <text x="900" y="604" class="node-copy">Signed webhook + deduplication</text>
+      <text x="900" y="626" class="node-copy">Atomic D1 transaction</text>
+      <text x="900" y="648" class="node-copy">Frozen price + COGS</text>
     </g>
   </g>
 
@@ -299,7 +300,7 @@
     <path d="M955 439 L955 500" class="flow-blue"/>
     <path d="M310 612 L335 612" class="flow"/>
     <path d="M555 612 L580 612" class="flow"/>
-    <path d="M855 612 L880 612" class="flow-dashed"/>
+    <path d="M855 612 L880 612" class="flow"/>
     <path d="M445 675 C445 720 725 710 725 790" class="flow"/>
     <path d="M718 675 C718 720 1007 710 1007 790" class="flow"/>
     <path d="M725 880 C725 925 210 925 210 995" class="flow"/>
