@@ -13,6 +13,7 @@ import {
 } from '../src/integrations/courier/courierClient.factory';
 import { ManualCourierClient } from '../src/integrations/courier/manualCourierClient';
 import { createApp } from '../src/index';
+import { recordManualFees } from '../src/modules/shipping/manualFees.service';
 
 const ORDER_ID = '0199b001-1000-7000-8000-000000000001';
 const authenticatedAccess: MiddlewareHandler<AppEnvironment> = async (context, next) => {
@@ -160,7 +161,165 @@ beforeEach(async () => {
   ]);
 });
 
+describe('manual fee recording', () => {
+  async function prepareManual() {
+    await createApp(authenticatedAccess).request(
+      `https://example.com/admin/orders/${ORDER_ID}/parcel`,
+      { method: 'POST' },
+      bindings(),
+    );
+    return (await env.DB.prepare('SELECT id FROM shipments').first<{ id: string }>())!.id;
+  }
+  async function submit(
+    id: string,
+    input: unknown = { deliveryFee: '0', returnFee: '0', reason: 'Self delivery test' },
+    origin = 'https://example.com',
+    middleware = authenticatedAccess,
+  ) {
+    return createApp(middleware).request(
+      `https://example.com/admin/shipments/${id}/fees`,
+      {
+        method: 'POST',
+        headers: { Origin: origin, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(input),
+      },
+      bindings(),
+    );
+  }
+  async function fees() {
+    return env.DB.prepare(
+      'SELECT delivery_fee_centimes, return_fee_centimes FROM shipments',
+    ).first();
+  }
+  it('keeps fees unknown until explicit zero is recorded atomically with an audit event', async () => {
+    const id = await prepareManual();
+    expect(await fees()).toEqual({ delivery_fee_centimes: null, return_fee_centimes: null });
+    const response = await submit(id);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store, max-age=0');
+    expect(await fees()).toEqual({ delivery_fee_centimes: 0, return_fee_centimes: 0 });
+    expect(await readOrderStatus()).toBe('PACKED');
+    const audit = await env.DB.prepare(
+      "SELECT actor, from_status, to_status, payload_json FROM order_events WHERE reason = 'manual_fees_recorded'",
+    ).first<{ actor: string; from_status: string; to_status: string; payload_json: string }>();
+    expect(audit).toMatchObject({
+      actor: 'user:admin@anfashpara.test',
+      from_status: 'PACKED',
+      to_status: 'PACKED',
+    });
+    expect(JSON.parse(audit!.payload_json)).toMatchObject({
+      reason: 'Self delivery test',
+      previous: { deliveryFeeCentimes: null },
+      next: { deliveryFeeCentimes: 0 },
+    });
+    expect(await (await submit(id)).json()).toEqual({ duplicate: true });
+    expect(await rowCount('order_events')).toBe(2);
+    expect(
+      (await submit(id, { deliveryFee: '1', returnFee: '0', reason: 'Changed fees' })).status,
+    ).toBe(409);
+  });
+  it('parses decimal MAD exactly and freezes known manual fees', async () => {
+    const id = await prepareManual();
+    expect(
+      (await submit(id, { deliveryFee: '12,34', returnFee: '5.01', reason: 'Operator fee quote' }))
+        .status,
+    ).toBe(200);
+    expect(await fees()).toEqual({ delivery_fee_centimes: 1234, return_fee_centimes: 501 });
+  });
+  it('rejects missing, negative, fractional, client actor and malformed fields without effects', async () => {
+    const id = await prepareManual();
+    for (const input of [
+      {},
+      { deliveryFee: '-1', returnFee: '0', reason: 'Bad quote' },
+      { deliveryFee: '1.001', returnFee: '0', reason: 'Bad quote' },
+      { deliveryFee: '0', returnFee: '0', reason: 'Bad quote', actor: 'system' },
+    ])
+      expect((await submit(id, input)).status).toBe(400);
+    expect(await fees()).toEqual({ delivery_fee_centimes: null, return_fee_centimes: null });
+    expect(await rowCount('order_events')).toBe(1);
+  });
+  it('rejects foreign, missing and null origins, service identities and unauthenticated requests', async () => {
+    const id = await prepareManual();
+    for (const origin of ['https://evil.test', '', 'null'])
+      expect((await submit(id, undefined, origin)).status).toBe(403);
+    const service: MiddlewareHandler<AppEnvironment> = async (c, next) => {
+      c.set('accessIdentity', { email: 'service@test.invalid', subject: 'test', kind: 'service' });
+      await next();
+    };
+    expect((await submit(id, undefined, 'https://example.com', service)).status).toBe(403);
+    expect(
+      (
+        await createApp().request(
+          `https://example.com/admin/shipments/${id}/fees`,
+          undefined,
+          bindings(),
+        )
+      ).status,
+    ).toBe(503);
+    expect(await rowCount('order_events')).toBe(1);
+  });
+  it('rejects non-manual, settled, malformed and nonexistent shipments', async () => {
+    const id = await prepareManual();
+    expect((await submit('bad')).status).toBe(400);
+    expect((await submit('0199b001-1000-7000-8000-000000000999')).status).toBe(404);
+    await env.DB.prepare("UPDATE orders SET status = 'SETTLED'").run();
+    expect((await submit(id)).status).toBe(409);
+    await env.DB.prepare("UPDATE shipments SET tracking_number = 'REAL-123'").run();
+    expect((await submit(id)).status).toBe(409);
+  });
+  it('rolls back fee changes if audit insertion fails', async () => {
+    const id = await prepareManual();
+    await env.DB.prepare('DROP TABLE order_events').run();
+    expect((await submit(id)).status).toBe(503);
+    expect(await fees()).toEqual({ delivery_fee_centimes: null, return_fee_centimes: null });
+  });
+  it('fences racing fee snapshots so exactly one audit is written', async () => {
+    const id = await prepareManual();
+    const results = await Promise.allSettled(
+      [1, 2].map(() =>
+        recordManualFees(
+          env.DB,
+          id,
+          { deliveryFeeCentimes: 0, returnFeeCentimes: 0, reason: 'Self delivery test' },
+          'user:admin@anfashpara.test',
+        ),
+      ),
+    );
+    expect(results.some((result) => result.status === 'fulfilled')).toBe(true);
+    expect(await rowCount('order_events')).toBe(2);
+    expect(await fees()).toEqual({ delivery_fee_centimes: 0, return_fee_centimes: 0 });
+  });
+  it('shows a private French form without defaulting unknown fees to zero', async () => {
+    const id = await prepareManual();
+    const response = await createApp(authenticatedAccess).request(
+      `https://example.com/admin/shipments/${id}/fees`,
+      undefined,
+      bindings(),
+    );
+    expect(response.headers.get('referrer-policy')).toBe('same-origin');
+    expect(response.headers.get('cache-control')).toBe('private, no-store, max-age=0');
+    const body = await response.text();
+    expect(body).toContain('Inconnu n’est pas zéro');
+    expect(body).not.toContain('value="0"');
+    expect(body).toContain('Enregistrer les frais');
+  });
+});
+
 describe('create parcel workflow', () => {
+  it('rejects cross-site parcel requests before calling the courier', async () => {
+    const client = successfulClient();
+    const response = await createApp(authenticatedAccess, () => client).request(
+      `https://example.com/admin/orders/${ORDER_ID}/parcel`,
+      {
+        method: 'POST',
+        headers: { Origin: 'https://evil.test' },
+      },
+      bindings(),
+    );
+    expect(response.status).toBe(403);
+    expect(client.createParcelCalls).toHaveLength(0);
+    expect(await countShipments()).toBe(0);
+  });
   it('shows the action only for a confirmed order', async () => {
     const client = successfulClient();
     const response = await requestWith(client, '/admin/orders');

@@ -106,6 +106,22 @@ beforeEach(async () => {
 });
 
 describe('confirmation workflow', () => {
+  it('rejects browser cross-site confirmation before creating attempts', async () => {
+    const response = await createApp(authenticatedAccess).request(
+      `https://example.com/admin/orders/${ORDER_ID}/confirmation`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({ action: 'confirmed' }),
+        headers: {
+          Origin: 'https://evil.test',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      },
+      bindings(),
+    );
+    expect(response.status).toBe(403);
+    expect(await countAttempts()).toBe(0);
+  });
   it('renders all actions and a normalized WhatsApp confirmation link', async () => {
     const response = await requestAdmin('/admin/orders');
     const body = await response.text();

@@ -11,6 +11,7 @@ import migration4 from '../migrations/0004_rainy_loki.sql?raw';
 import migration5 from '../migrations/0005_even_lilith.sql?raw';
 import type { AppEnvironment } from '../src/auth/cloudflareAccess';
 import { createApp } from '../src/index';
+import { recordManualFees } from '../src/modules/shipping/manualFees.service';
 import {
   importReconciliation,
   previewReconciliation,
@@ -113,6 +114,65 @@ beforeEach(async () => {
 });
 
 describe('settlement reconciliation and import', () => {
+  it('settles a manual shipment only after explicit fees, using actual migration constraints', async () => {
+    await env.DB.prepare(
+      "UPDATE shipments SET tracking_number = 'SELF-DEMO', delivery_fee_centimes = NULL, return_fee_centimes = NULL WHERE id = ?",
+    )
+      .bind(uuid(4))
+      .run();
+    const value = { ...input('SELF-DEMO,250,0,0,250,delivered'), amountPaid: '250' };
+    const unknown = await approve(value);
+    expect(unknown.report.exactCount).toBe(0);
+    await recordManualFees(
+      env.DB,
+      uuid(4),
+      {
+        deliveryFeeCentimes: 0,
+        returnFeeCentimes: 0,
+        reason: 'Explicit free self-delivery rehearsal',
+      },
+      'user:admin@example.test',
+    );
+    const preview = await approve(value);
+    expect(preview.report.exactCount).toBe(1);
+    expect(
+      (await request('import', { ...value, approval: preview.approval, confirmed: true })).status,
+    ).toBe(201);
+    expect(await status()).toBe('SETTLED');
+    expect(await count('order_events')).toBe(2);
+    expect(
+      (await request('import', { ...value, approval: preview.approval, confirmed: true })).status,
+    ).toBe(200);
+    expect(await count('order_events')).toBe(2);
+  });
+  it('rolls back manual fees when the real audit table rejects the insert', async () => {
+    await env.DB.prepare(
+      "UPDATE shipments SET tracking_number = 'SELF-DEMO', delivery_fee_centimes = NULL, return_fee_centimes = NULL WHERE id = ?",
+    )
+      .bind(uuid(4))
+      .run();
+    await env.DB.prepare(
+      "CREATE TRIGGER reject_fee_audit BEFORE INSERT ON order_events WHEN NEW.reason = 'manual_fees_recorded' BEGIN SELECT RAISE(ABORT,'audit rejected'); END",
+    ).run();
+    await expect(
+      recordManualFees(
+        env.DB,
+        uuid(4),
+        {
+          deliveryFeeCentimes: 0,
+          returnFeeCentimes: 0,
+          reason: 'Explicit free self-delivery rehearsal',
+        },
+        'user:admin@example.test',
+      ),
+    ).rejects.toThrow();
+    expect(
+      await env.DB.prepare('SELECT delivery_fee_centimes FROM shipments WHERE id = ?')
+        .bind(uuid(4))
+        .first(),
+    ).toEqual({ delivery_fee_centimes: null });
+    expect(await count('order_events')).toBe(0);
+  });
   it('rolls back two eligible orders when the final audit event fails', async () => {
     const value = {
       ...input('T1,250,30,0,220,delivered\nT2,250,30,0,220,delivered'),

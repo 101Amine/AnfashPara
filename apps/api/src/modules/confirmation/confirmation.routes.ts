@@ -11,6 +11,18 @@ export function registerConfirmationRoutes(app: Hono<AppEnvironment>): void {
     context.header('Cache-Control', 'private, no-store, max-age=0');
     context.header('Vary', 'Cookie, Cf-Access-Jwt-Assertion');
 
+    const origin = context.req.header('Origin');
+    if (
+      (origin !== undefined && origin !== new URL(context.req.url).origin) ||
+      context.req.header('Sec-Fetch-Site') === 'cross-site'
+    )
+      return confirmationError(
+        context,
+        403,
+        'invalid_origin',
+        'Action non autorisée depuis ce site.',
+      );
+
     if (!context.env.DB) {
       return confirmationError(context, 503, 'service_unavailable', 'Service indisponible.');
     }
