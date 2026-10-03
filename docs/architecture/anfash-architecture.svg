@@ -175,9 +175,9 @@
 
     <g id="module-internal-contracts" data-status="implemented">
       <rect x="875" y="790" width="265" height="90" class="node implemented"/>
-      <text x="895" y="820" class="node-title">Internal API contracts</text>
-      <text x="895" y="844" class="node-copy">Orders + fulfillment payloads</text>
-      <text x="895" y="864" class="node-copy">Sanitized test fixtures</text>
+      <text x="895" y="820" class="node-title">Contracts + courier port</text>
+      <text x="895" y="844" class="node-copy">CourierClient · no SDK coupling</text>
+      <text x="895" y="864" class="node-copy">Deterministic fake + fixtures</text>
     </g>
   </g>
 
