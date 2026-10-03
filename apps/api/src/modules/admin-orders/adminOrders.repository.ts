@@ -13,6 +13,8 @@ type AdminOrderDatabaseRow = {
   order_number: string | null;
   phone_e164: string;
   placed_at: string;
+  shipment_id: string | null;
+  shipment_label_url: string | null;
   status: OrderStatus;
   status_started_at: string;
 };
@@ -25,6 +27,8 @@ export type AdminOrderListItem = {
   orderNumber: string | null;
   phoneE164: string;
   placedAt: string;
+  shipmentId: string | null;
+  shipmentLabelAvailable: boolean;
   status: OrderStatus;
   statusStartedAt: string;
 };
@@ -73,6 +77,8 @@ export async function listAdminOrders(
          o.placed_at,
          c.name AS customer_name,
          c.phone_e164,
+         s.id AS shipment_id,
+         s.label_url AS shipment_label_url,
          COALESCE(
            (SELECT MAX(oe.created_at)
               FROM order_events oe
@@ -81,6 +87,7 @@ export async function listAdminOrders(
          ) AS status_started_at
        FROM orders o
        INNER JOIN customers c ON c.id = o.customer_id
+       LEFT JOIN shipments s ON s.order_id = o.id AND s.store_id = o.store_id
        WHERE ${conditions.join(' AND ')}
        ORDER BY o.placed_at DESC, o.id DESC
        LIMIT ?`,
@@ -105,6 +112,9 @@ export async function listAdminOrders(
       orderNumber: row.order_number,
       phoneE164: row.phone_e164,
       placedAt: row.placed_at,
+      shipmentId: row.shipment_id,
+      shipmentLabelAvailable:
+        row.shipment_label_url !== null && row.shipment_label_url.trim() !== '',
       status: row.status,
       statusStartedAt: row.status_started_at,
     })),

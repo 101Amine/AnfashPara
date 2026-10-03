@@ -17,3 +17,5 @@ COURIER_ACCOUNT_ID=
 COURIER_API_TOKEN=
 # HMAC secret for POST /api/webhooks/courier. Only needed for a courier integration.
 COURIER_WEBHOOK_SECRET=
+# Comma-separated HTTPS origins allowed for stored label URLs (no paths).
+COURIER_LABEL_ORIGINS=
