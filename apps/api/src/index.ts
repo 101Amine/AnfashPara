@@ -17,6 +17,7 @@ import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebho
 import { registerPublicOrderRoutes } from './modules/public-orders/publicOrder.routes';
 import { registerParcelRoutes } from './modules/shipping/parcel.routes';
 import { registerSettlementPreviewRoutes } from './modules/settlements/settlementPreview.routes';
+import { registerReconciliationRoutes } from './modules/settlements/reconciliation.routes';
 import { registerCourierWebhookRoutes } from './modules/status-sync/courierWebhook.routes';
 import {
   pollOpenShipments,
@@ -51,6 +52,7 @@ export const createApp = (
   registerOrderWebhookRoutes(app);
   registerCourierWebhookRoutes(app);
   registerSettlementPreviewRoutes(app);
+  registerReconciliationRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),

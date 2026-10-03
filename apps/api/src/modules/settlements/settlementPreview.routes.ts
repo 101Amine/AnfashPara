@@ -90,7 +90,7 @@ export function registerSettlementPreviewRoutes(app: Hono<AppEnvironment>): void
 }
 
 /** Bound the actual stream, even when Content-Length is absent or inaccurate. */
-async function readLimitedBody(request: Request): Promise<Uint8Array<ArrayBuffer>> {
+export async function readLimitedBody(request: Request): Promise<Uint8Array<ArrayBuffer>> {
   if (Number(request.headers.get('Content-Length')) > MAX_UPLOAD_BYTES) {
     throw new SettlementParseError('file_too_large', 'Le fichier dépasse la limite de 1 Mio.');
   }
