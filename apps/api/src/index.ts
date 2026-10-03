@@ -11,8 +11,13 @@ import {
 } from './integrations/courier/courierClient.factory';
 import { registerAdminOrdersRoutes } from './modules/admin-orders/adminOrders.routes';
 import { registerConfirmationRoutes } from './modules/confirmation/confirmation.routes';
+import { registerLabelRoutes } from './modules/labels/labels.routes';
+import type { LabelFetcher } from './modules/labels/labels.service';
 import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
+import { registerPublicOrderRoutes } from './modules/public-orders/publicOrder.routes';
 import { registerParcelRoutes } from './modules/shipping/parcel.routes';
+import { registerSettlementPreviewRoutes } from './modules/settlements/settlementPreview.routes';
+import { registerReconciliationRoutes } from './modules/settlements/reconciliation.routes';
 import { registerCourierWebhookRoutes } from './modules/status-sync/courierWebhook.routes';
 import {
   pollOpenShipments,
@@ -25,6 +30,7 @@ const READ_CACHE_CONTROL = 'public, max-age=60';
 export const createApp = (
   accessMiddleware = cloudflareAccess(),
   courierClientFactory: CourierClientFactory = createCourierClientFromBindings,
+  labelFetcher: LabelFetcher = fetch,
 ): Hono<AppEnvironment> => {
   const app = new Hono<AppEnvironment>();
 
@@ -40,9 +46,13 @@ export const createApp = (
 
   registerAdminOrdersRoutes(app);
   registerConfirmationRoutes(app);
+  registerLabelRoutes(app, labelFetcher);
   registerParcelRoutes(app, courierClientFactory);
+  registerPublicOrderRoutes(app);
   registerOrderWebhookRoutes(app);
   registerCourierWebhookRoutes(app);
+  registerSettlementPreviewRoutes(app);
+  registerReconciliationRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),

@@ -1,0 +1,3 @@
+tracking_number,cod_collected,delivery_fee,return_fee,net_amount,courier_status
+,250.001,30,0,220,delivered
+SELF-DEMO-BAD-002,100,30 MAD,0,70,

@@ -21,6 +21,7 @@ beforeEach(async () => {
   if (!env.DB) throw new Error('The test D1 binding is missing');
 
   for (const statement of [
+    'DROP TABLE IF EXISTS shipments',
     'DROP TABLE IF EXISTS confirmation_attempts',
     'DROP TABLE IF EXISTS order_events',
     'DROP TABLE IF EXISTS orders',
@@ -64,6 +65,12 @@ beforeEach(async () => {
       reason TEXT,
       payload_json TEXT,
       created_at TEXT NOT NULL
+    )`,
+    `CREATE TABLE shipments (
+      id TEXT PRIMARY KEY NOT NULL,
+      store_id TEXT NOT NULL,
+      order_id TEXT NOT NULL,
+      label_url TEXT
     )`,
   ]) {
     await env.DB.prepare(statement).run();

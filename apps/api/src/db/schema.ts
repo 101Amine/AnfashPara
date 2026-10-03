@@ -469,6 +469,9 @@ export const courierSettlements = sqliteTable(
     amountPaidCentimes: integer('amount_paid_centimes').notNull(),
     importedAt: text('imported_at').notNull(),
     sourceFile: text('source_file'),
+    contentHash: text('content_hash'),
+    reportJson: text('report_json'),
+    importedBy: text('imported_by'),
   },
   (table) => [
     uniqueIndex('courier_settlements_store_statement_unique').on(

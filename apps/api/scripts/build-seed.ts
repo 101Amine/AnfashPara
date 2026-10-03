@@ -333,7 +333,7 @@ const shipmentRows = shipments.map((shipment, index) => [
   shipment.status,
   shipment.status === 'in_transit' ? null : 3500,
   shipment.status === 'refused' || shipment.status === 'returned' ? 1500 : null,
-  `https://example.invalid/labels/${shipment.trackingNumber}.pdf`,
+  null,
   timestampAt(30 + index),
   timestampAt(31 + index),
 ]);

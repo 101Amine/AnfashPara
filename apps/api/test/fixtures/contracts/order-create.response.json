@@ -1,7 +1,8 @@
 {
+  "duplicate": false,
   "orderId": "0199a001-1000-7000-8000-000000000001",
-  "orderNumber": "PARA-TEST-0001",
+  "orderNumber": "PARA-63CDA17FA3E2B740",
   "status": "CONFIRMING",
-  "codAmountCentimes": 42700,
+  "codAmountCentimes": 28700,
   "currency": "MAD"
 }
