@@ -388,6 +388,7 @@ export async function renderAdminOrdersPage(
               <a href="/admin/settlements">Aperçu des règlements</a>
               <a href="/admin/outbox">Tâches différées</a>
               <a href="/admin/dashboard">Tableau de bord</a>
+              <a href="/admin/inventory">Stock</a>
             </div>
           </header>
 
