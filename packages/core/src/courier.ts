@@ -13,6 +13,7 @@ export const COURIER_STATUS_CODES = [
 export type CourierStatusCode = (typeof COURIER_STATUS_CODES)[number];
 
 export interface CreateParcelInput {
+  readonly idempotencyKey: string;
   readonly orderId: string;
   readonly orderReference: string;
   readonly receiver: {
@@ -29,7 +30,7 @@ export interface CreateParcelResult {
   readonly courier: string;
   readonly trackingNumber: string;
   readonly rawStatus: string;
-  readonly status: 'created';
+  readonly status: 'created' | 'picked';
   readonly deliveryFeeCentimes?: number;
   readonly returnFeeCentimes?: number;
   readonly labelUrl?: string;
