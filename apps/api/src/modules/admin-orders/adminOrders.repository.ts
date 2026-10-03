@@ -15,6 +15,7 @@ type AdminOrderDatabaseRow = {
   placed_at: string;
   shipment_id: string | null;
   shipment_label_url: string | null;
+  shipment_tracking_number: string | null;
   status: OrderStatus;
   status_started_at: string;
 };
@@ -29,6 +30,7 @@ export type AdminOrderListItem = {
   placedAt: string;
   shipmentId: string | null;
   shipmentLabelAvailable: boolean;
+  shipmentManual: boolean;
   status: OrderStatus;
   statusStartedAt: string;
 };
@@ -79,6 +81,7 @@ export async function listAdminOrders(
          c.phone_e164,
          s.id AS shipment_id,
          s.label_url AS shipment_label_url,
+         s.tracking_number AS shipment_tracking_number,
          COALESCE(
            (SELECT MAX(oe.created_at)
               FROM order_events oe
@@ -113,6 +116,7 @@ export async function listAdminOrders(
       phoneE164: row.phone_e164,
       placedAt: row.placed_at,
       shipmentId: row.shipment_id,
+      shipmentManual: row.shipment_tracking_number?.startsWith('SELF-') ?? false,
       shipmentLabelAvailable:
         row.shipment_label_url !== null && row.shipment_label_url.trim() !== '',
       status: row.status,

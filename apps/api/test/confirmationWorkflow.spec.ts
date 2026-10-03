@@ -70,7 +70,8 @@ beforeEach(async () => {
       id TEXT PRIMARY KEY NOT NULL,
       store_id TEXT NOT NULL,
       order_id TEXT NOT NULL,
-      label_url TEXT
+      label_url TEXT,
+      tracking_number TEXT
     )`,
   ]) {
     await env.DB.prepare(statement).run();

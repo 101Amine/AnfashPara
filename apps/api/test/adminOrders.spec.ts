@@ -54,7 +54,8 @@ const resetDatabase = async (): Promise<void> => {
       id TEXT PRIMARY KEY NOT NULL,
       store_id TEXT NOT NULL,
       order_id TEXT NOT NULL,
-      label_url TEXT
+      label_url TEXT,
+      tracking_number TEXT
     )`,
   ];
 
@@ -97,7 +98,9 @@ const resetDatabase = async (): Promise<void> => {
     ]);
   }
 
-  await env.DB.prepare('INSERT INTO shipments VALUES (?, ?, ?, ?)')
+  await env.DB.prepare(
+    'INSERT INTO shipments (id, store_id, order_id, label_url) VALUES (?, ?, ?, ?)',
+  )
     .bind(
       '0199b001-2000-7000-8000-000000000023',
       'para-main',

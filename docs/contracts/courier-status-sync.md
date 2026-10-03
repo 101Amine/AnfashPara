@@ -1,7 +1,7 @@
 # Courier status synchronization
 
 Courier status updates enter through one shared service, whether they arrive from the signed webhook
-or the scheduled polling fallback. That service owns deduplication, shipment updates, order state
+or the scheduled polling fallback, or from a protected manual admin action. That service owns deduplication, shipment updates, order state
 transitions, customer counters, and event history.
 
 ## Signed webhook
@@ -28,7 +28,7 @@ The adapter accepts normalized English values and common French equivalents, inc
 `Refusé`, and `Retourné`. They map to the internal shipment statuses `delivered`, `refused`, and
 `returned`.
 
-All order changes pass through the core `transition()` state machine as `courier:<courier-name>`.
+Courier order changes pass through the core `transition()` state machine as `courier:<courier-name>`.
 Courier events may produce `SHIPPED`, `DELIVERED`, `REFUSED`, and `RETURNED`. `SETTLED` is not a
 courier status, is rejected by the mapper, and remains exclusive to reconciliation.
 
@@ -40,3 +40,15 @@ synthetic event ID, so an identical result has no second effect. Terminal shipme
 
 `COURIER_MODE=manual` skips polling because self-deliveries require deliberate operator updates; it
 does not invent a status for them.
+
+## Manual operator workflow
+
+See [the manual shipment contract](./manual-shipment-status.md). Admin actions enter the same
+service with the verified `user:<email>` actor. The operator must follow each legal edge explicitly.
+The state machine now permits user actors to mark a shipped order delivered or refused; only
+reconciliation may settle it.
+
+For fresh status updates, the first statement in the D1 batch checks that the order is still in
+the status read by the service. If another action won the race, a NOT NULL failure rolls the
+entire batch back. A committed identical event returns `duplicate: true`; a competing update
+returns a controlled transition conflict so callers can reload and retry.

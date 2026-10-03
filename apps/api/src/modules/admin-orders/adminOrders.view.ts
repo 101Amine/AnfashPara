@@ -526,8 +526,33 @@ function renderOrderActions(
             >`
         : ''
     }
-    ${renderLabelActions(order)}
+    ${renderLabelActions(order)} ${renderManualShipmentActions(order)}
   </div>`;
+}
+
+function renderManualShipmentActions(order: AdminOrderListItem) {
+  if (!order.shipmentManual || order.shipmentId === null) return '';
+  const actions =
+    order.status === 'PACKED'
+      ? [['picked', 'Remis / Expédié']]
+      : order.status === 'SHIPPED'
+        ? [
+            ['delivered', 'Livré'],
+            ['refused', 'Refusé'],
+          ]
+        : order.status === 'REFUSED'
+          ? [['returned', 'Retourné']]
+          : [];
+  return actions.map(
+    ([action, label]) =>
+      html`<form
+        method="post"
+        action="${`/admin/orders/${order.id}/shipments/${order.shipmentId}/status`}"
+      >
+        <input type="hidden" name="action" value="${action}" />
+        <button class="action action-parcel" type="submit">${label}</button>
+      </form>`,
+  );
 }
 
 function renderLabelActions(
