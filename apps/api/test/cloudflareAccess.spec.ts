@@ -12,6 +12,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import { cloudflareAccess, type AppBindings } from '../src/auth/cloudflareAccess';
 import { createApp } from '../src/index';
+import { env } from 'cloudflare:test';
 
 const AUDIENCE = 'test-audience';
 const ISSUER = 'https://test.cloudflareaccess.com';
@@ -71,6 +72,99 @@ beforeAll(async () => {
 });
 
 describe('Cloudflare Access middleware', () => {
+  async function machineToken(
+    commonName = 'test.access',
+    expiry = Math.floor(Date.now() / 1000) + 300,
+  ) {
+    return new SignJWT({ common_name: commonName, type: 'app' })
+      .setProtectedHeader({ alg: 'RS256', kid: KEY_ID })
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setSubject('')
+      .setExpirationTime(expiry)
+      .sign(privateKey);
+  }
+  const machineBindings = () => ({
+    ...env,
+    ...bindings,
+    ENVIRONMENT: 'staging',
+    CF_ACCESS_STAGING_CLIENT_ID: 'test.access',
+  });
+  const staging = 'https://para-api-staging.alanfashpara.workers.dev';
+  it('accepts the configured signed service identity for staging preflight only', async () => {
+    const response = await createApp(cloudflareAccess({ getKey: localKeySet })).request(
+      staging + '/admin/testing/lifecycle',
+      { headers: { 'Cf-Access-Jwt-Assertion': await machineToken() } },
+      machineBindings(),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ environment: 'staging', mode: 'manual' });
+  });
+  it('rejects unapproved and expired service identities', async () => {
+    for (const token of [
+      await machineToken('other.access'),
+      await machineToken('test.access', 1),
+    ]) {
+      expect(
+        (
+          await createApp(cloudflareAccess({ getKey: localKeySet })).request(
+            staging + '/admin/testing/lifecycle',
+            { headers: { 'Cf-Access-Jwt-Assertion': token } },
+            machineBindings(),
+          )
+        ).status,
+      ).toBe(401);
+    }
+  });
+  it('does not accept service authentication on production or a different host', async () => {
+    const app = createApp(cloudflareAccess({ getKey: localKeySet }));
+    const token = await machineToken();
+    expect(
+      (
+        await app.request(
+          staging + '/admin/testing/lifecycle',
+          { headers: { 'Cf-Access-Jwt-Assertion': token } },
+          { ...machineBindings(), ENVIRONMENT: 'prod' },
+        )
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await app.request(
+          'https://example.com/admin/testing/lifecycle',
+          { headers: { 'Cf-Access-Jwt-Assertion': token } },
+          machineBindings(),
+        )
+      ).status,
+    ).toBe(401);
+  });
+  it('denies general admin access even with an approved service JWT', async () => {
+    for (const path of ['/admin/orders', '/admin/inventory', '/admin/dashboard', '/admin/whoami'])
+      expect(
+        (
+          await createApp(cloudflareAccess({ getKey: localKeySet })).request(
+            staging + path,
+            { headers: { 'Cf-Access-Jwt-Assertion': await machineToken() } },
+            machineBindings(),
+          )
+        ).status,
+      ).toBe(403);
+  });
+  it('rejects non-synthetic order writes before entering the domain route', async () => {
+    await env.DB.prepare(
+      'CREATE TABLE IF NOT EXISTS orders(id TEXT,store_id TEXT,order_number TEXT,utm_campaign TEXT,utm_source TEXT,address TEXT,note TEXT)',
+    ).run();
+    const id = '0199b001-1000-7000-8000-000000000001';
+    await env.DB.prepare('INSERT INTO orders VALUES (?,?,?,?,?,?,?)')
+      .bind(id, 'para-main', 'REAL-1', 'real', 'web', 'real', 'real')
+      .run();
+    const response = await createApp(cloudflareAccess({ getKey: localKeySet })).request(
+      staging + `/admin/orders/${id}/confirmation`,
+      { method: 'POST', headers: { 'Cf-Access-Jwt-Assertion': await machineToken() } },
+      machineBindings(),
+    );
+    expect(response.status).toBe(403);
+  });
   it('returns the verified email for a valid Access token', async () => {
     const response = await requestWhoAmI(await signToken());
 
