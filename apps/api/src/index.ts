@@ -114,6 +114,7 @@ export const createApp = (
           id: products.id,
           name: products.name,
           priceCentimes: products.priceCentimes,
+          sku: products.sku,
           slug: products.slug,
         })
         .from(products)

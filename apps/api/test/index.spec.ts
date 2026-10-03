@@ -20,6 +20,7 @@ const resetDatabase = async (): Promise<void> => {
     `CREATE TABLE products (
       id TEXT PRIMARY KEY NOT NULL,
       store_id TEXT NOT NULL,
+      sku TEXT NOT NULL,
       slug TEXT NOT NULL,
       name TEXT NOT NULL,
       price_centimes INTEGER NOT NULL,
@@ -42,15 +43,15 @@ const resetDatabase = async (): Promise<void> => {
     )`,
     `INSERT INTO products VALUES
       (
-        'active-product', 'para-main', 'active-product', 'Active product', 8900, 1,
+        'active-product', 'para-main', 'ACTIVE-001', 'active-product', 'Active product', 8900, 1,
         '2026-09-12T00:00:00.000Z', '2026-09-12T00:00:00.000Z'
       ),
       (
-        'inactive-product', 'para-main', 'inactive-product', 'Inactive product', 9900, 0,
+        'inactive-product', 'para-main', 'INACTIVE-001', 'inactive-product', 'Inactive product', 9900, 0,
         '2026-09-12T00:00:00.000Z', '2026-09-12T00:00:00.000Z'
       ),
       (
-        'other-store-product', 'other-store', 'other-store-product', 'Other store product', 10900, 1,
+        'other-store-product', 'other-store', 'OTHER-001', 'other-store-product', 'Other store product', 10900, 1,
         '2026-09-12T00:00:00.000Z', '2026-09-12T00:00:00.000Z'
       )`,
   ];
@@ -110,6 +111,7 @@ describe('API routes', () => {
           id: 'active-product',
           name: 'Active product',
           priceCentimes: 8900,
+          sku: 'ACTIVE-001',
           slug: 'active-product',
         },
       ],

@@ -135,6 +135,9 @@
     </g>
 
     <g id="module-live-routes" data-status="live">
+      <g id="module-catalogue-checkout-identifiers" data-status="implemented">
+        <title>W4-01: public catalogue explicitly exposes ID, SKU, slug, name and price only. Checkout takes the returned SKU and reloads authoritative active status and price from D1. Costs, stock and audit data remain private. Tested; staging deployment pending.</title>
+      </g>
       <rect x="580" y="550" width="275" height="125" class="node live"/>
       <text x="600" y="580" class="node-title">Implemented routes</text>
       <text x="600" y="604" class="node-small">/api/health · /api/version</text>
@@ -299,7 +302,7 @@
       <rect x="1235" y="305" width="280" height="100" class="rail-node"/>
       <text x="1255" y="335" class="rail-node-title">GitHub Actions CI</text>
       <text x="1255" y="359" class="rail-copy">Frozen install · lint · typecheck</text>
-      <text x="1255" y="381" class="rail-copy">562 automated tests passing</text>
+      <text x="1255" y="381" class="rail-copy">566 automated tests passing</text>
     </g>
 
     <path d="M1375 405 L1375 445" class="rail-flow"/>
