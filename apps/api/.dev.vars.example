@@ -15,3 +15,5 @@ COURIER_NAME=self-delivery
 COURIER_API_URL=
 COURIER_ACCOUNT_ID=
 COURIER_API_TOKEN=
+# HMAC secret for POST /api/webhooks/courier. Only needed for a courier integration.
+COURIER_WEBHOOK_SECRET=

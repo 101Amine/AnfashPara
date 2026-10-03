@@ -173,6 +173,12 @@ describe('scheduled handler', () => {
         environment: 'local',
         event: 'scheduled',
         gitSha: 'uncommitted',
+        shipmentStatusPoll: {
+          failed: 0,
+          processed: 0,
+          reason: 'manual_mode',
+          skipped: 0,
+        },
         scheduledTime: '2026-09-12T12:00:00.000Z',
       }),
     );
