@@ -103,6 +103,7 @@ export function renderSettlementPreview(model: SettlementPreviewViewModel) {
       <body>
         <main>
           <a href="/admin/orders">Retour aux commandes</a>
+          · <a href="/admin/settlements/reconcile">Rapprocher et importer un relevé</a>
           <h1>Aperçu des règlements</h1>
           <p class="identity">Connecté·e : ${model.email}</p>
           <p>Aperçu uniquement : aucune commande ni donnée financière n’est modifiée.</p>

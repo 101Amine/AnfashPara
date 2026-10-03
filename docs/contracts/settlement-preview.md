@@ -1,6 +1,8 @@
 # Settlement CSV preview — Week 3, issue #19
 
 The admin page at `/admin/settlements` reads a CSV file and displays what it contains.
+The separate [reconciliation workflow](./settlement-reconciliation.md) can now match and import an
+explicitly approved preview; the original preview endpoint remains read-only.
 It does not import the file into D1, match shipments, change orders, or confirm receipt of money.
 This also works for a fictional self-delivery statement while no courier has been selected.
 
@@ -111,18 +113,19 @@ fixtures are committed under `packages/core/test/fixtures/settlements`.
 - Unknown status strings are preserved, not mapped to order states.
 - Net amount is the reported value. Differences from COD minus fees are reconciliation questions;
   the preview does not silently correct them or assert that they are valid financial results.
-- The existing settlement table combines fees in `fee_centimes`. The future import service must
-  deliberately combine delivery and return fees or change the schema if separate storage is needed.
+- The settlement line table combines fees in `fee_centimes`. Reconciliation combines reported
+  delivery and return fees there and preserves their separate values in the immutable report JSON.
 - Statement reference, period, courier identity, bank receipt, and expected fees are not supplied
-  by this parser. Issue #20 needs these before recording or settling money.
+  by this parser. Reconciliation asks for courier, statement reference, period and confirmed receipt
+  amount separately, then loads expected fees from the shipment.
 
 ## Why parsing and settling are separate
 
 A readable file proves only that its fields can be interpreted. A line saying `delivered` does
 not prove it belongs to our shipment, that the fee is correct, or that the money reached us.
 Preview lets the operator catch bad columns and values without changing business state.
-Reconciliation must then match the shipment, compare expected amounts, handle differences,
-and use the authorized reconciliation actor for a DELIVERED → SETTLED transition.
+The reconciliation workflow matches the shipment, compares expected amounts, preserves exceptions,
+and uses the authorized reconciliation actor for an approved exact DELIVERED → SETTLED transition.
 
 No D1 migration is needed for this ticket. Parser unit tests exercise formats, exact arithmetic,
 row errors and limits. HTTP tests exercise Access protection, multipart handling, private caching,
