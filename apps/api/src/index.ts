@@ -1,6 +1,7 @@
 import { and, asc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
+import type { OutboxHandler } from '@para/core';
 import { secureHeaders } from 'hono/secure-headers';
 
 import { cloudflareAccess, type AppEnvironment } from './auth/cloudflareAccess';
@@ -18,6 +19,12 @@ import { registerPublicOrderRoutes } from './modules/public-orders/publicOrder.r
 import { registerParcelRoutes } from './modules/shipping/parcel.routes';
 import { registerSettlementPreviewRoutes } from './modules/settlements/settlementPreview.routes';
 import { registerReconciliationRoutes } from './modules/settlements/reconciliation.routes';
+import { registerOutboxRoutes } from './modules/outbox/outbox.routes';
+import {
+  processOutbox,
+  type OutboxProcessorOptions,
+  type OutboxSummary,
+} from './modules/outbox/outbox.service';
 import { registerCourierWebhookRoutes } from './modules/status-sync/courierWebhook.routes';
 import {
   pollOpenShipments,
@@ -53,6 +60,7 @@ export const createApp = (
   registerCourierWebhookRoutes(app);
   registerSettlementPreviewRoutes(app);
   registerReconciliationRoutes(app);
+  registerOutboxRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),
@@ -161,11 +169,44 @@ export async function runShipmentStatusPoll(
   return pollOpenShipments(env.DB, courierClientFactory(env));
 }
 
+export async function runOutboxDispatch(
+  env: AppEnvironment['Bindings'],
+  handler?: OutboxHandler,
+  options?: OutboxProcessorOptions,
+): Promise<OutboxSummary & { reason?: 'database_unavailable' | 'handler_unconfigured' }> {
+  if (!env.DB) return { processed: 0, failed: 0, skipped: 0, reason: 'database_unavailable' };
+  // Never install a fake/no-op adapter in production: success must mean actual durable handling.
+  if (!handler) return { processed: 0, failed: 0, skipped: 0, reason: 'handler_unconfigured' };
+  return processOutbox(env.DB, handler, options);
+}
+
+export async function runScheduledTasks(
+  env: AppEnvironment['Bindings'],
+  outboxHandler?: OutboxHandler,
+) {
+  // One failing subsystem must not prevent the other subsystem from running.
+  const [shipmentStatusPoll, outbox] = await Promise.all([
+    runShipmentStatusPoll(env).catch(() => ({
+      processed: 0,
+      failed: 1,
+      skipped: 0,
+      reason: 'poll_failed',
+    })),
+    runOutboxDispatch(env, outboxHandler).catch(() => ({
+      processed: 0,
+      failed: 1,
+      skipped: 0,
+      reason: 'processor_failed',
+    })),
+  ]);
+  return { shipmentStatusPoll, outbox };
+}
+
 export default {
   fetch: app.fetch,
   scheduled(controller, env, ctx): void {
     ctx.waitUntil(
-      runShipmentStatusPoll(env)
+      runScheduledTasks(env)
         .then((summary) => {
           console.log(
             JSON.stringify({
@@ -173,7 +214,7 @@ export default {
               environment: env.ENVIRONMENT,
               event: 'scheduled',
               gitSha: env.GIT_SHA,
-              shipmentStatusPoll: summary,
+              ...summary,
               scheduledTime: new Date(controller.scheduledTime).toISOString(),
             }),
           );
@@ -183,7 +224,7 @@ export default {
             JSON.stringify({
               cron: controller.cron,
               environment: env.ENVIRONMENT,
-              event: 'shipment_status_poll_failed',
+              event: 'scheduled_tasks_failed',
               gitSha: env.GIT_SHA,
               scheduledTime: new Date(controller.scheduledTime).toISOString(),
             }),

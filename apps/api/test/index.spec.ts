@@ -167,20 +167,19 @@ describe('scheduled handler', () => {
     worker.scheduled(controller, env, ctx);
     await waitOnExecutionContext(ctx);
 
-    expect(log).toHaveBeenCalledWith(
-      JSON.stringify({
-        cron: '0 * * * *',
-        environment: 'local',
-        event: 'scheduled',
-        gitSha: 'uncommitted',
-        shipmentStatusPoll: {
-          failed: 0,
-          processed: 0,
-          reason: 'manual_mode',
-          skipped: 0,
-        },
-        scheduledTime: '2026-09-12T12:00:00.000Z',
-      }),
-    );
+    expect(log.mock.calls.map(([entry]) => JSON.parse(String(entry)))).toContainEqual({
+      cron: '0 * * * *',
+      environment: 'local',
+      event: 'scheduled',
+      gitSha: 'uncommitted',
+      outbox: { failed: 0, processed: 0, reason: 'handler_unconfigured', skipped: 0 },
+      shipmentStatusPoll: {
+        failed: 0,
+        processed: 0,
+        reason: 'manual_mode',
+        skipped: 0,
+      },
+      scheduledTime: '2026-09-12T12:00:00.000Z',
+    });
   });
 });
