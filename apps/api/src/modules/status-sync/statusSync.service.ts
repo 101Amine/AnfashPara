@@ -19,15 +19,20 @@ type LatestShipmentEventRow = {
   occurred_at: string;
 };
 
-export type StatusSyncInput = {
+type StatusSyncFields = {
   eventId: string;
   normalizedStatus: CourierStatusCode;
   occurredAt: string;
   rawPayload: string;
   rawStatus: string;
-  source: 'poll' | 'webhook';
   trackingNumber: string;
 };
+
+export type StatusSyncInput = StatusSyncFields &
+  (
+    | { source: 'poll' | 'webhook' }
+    | { source: 'manual'; actor: `user:${string}`; orderId: string; shipmentId: string }
+  );
 
 export type StatusSyncResult = {
   duplicate: boolean;
@@ -56,14 +61,36 @@ export async function synchronizeCourierStatus(
 ): Promise<StatusSyncResult> {
   const shipment = await loadShipment(database, input.trackingNumber);
   if (shipment === null) throw new ShipmentNotFoundError();
+  if (
+    input.source === 'manual' &&
+    (shipment.order_id !== input.orderId || shipment.shipment_id !== input.shipmentId)
+  ) {
+    throw new ShipmentNotFoundError();
+  }
 
   const inboxSource = `courier-${input.source}:${shipment.courier}`;
   if (await inboxEventExists(database, inboxSource, input.eventId)) {
     return { duplicate: true };
   }
 
+  // An operator must explicitly follow each edge; courier notifications may skip edges.
+  if (input.source === 'manual') {
+    const target = orderTargetFor(input.normalizedStatus);
+    if (target === null || target === shipment.order_status) return { duplicate: true };
+    try {
+      transition(
+        { id: shipment.order_id, status: shipment.order_status, noAnswerAttempts: 0 },
+        target,
+        { actor: input.actor },
+      );
+    } catch {
+      throw new ShipmentStatusTransitionError();
+    }
+  }
+
   const latestEvent = await loadLatestShipmentEvent(database, shipment.shipment_id);
-  const stale = latestEvent !== null && input.occurredAt < latestEvent.occurred_at;
+  const stale =
+    input.source !== 'manual' && latestEvent !== null && input.occurredAt < latestEvent.occurred_at;
   const timestamp = now.toISOString();
   const statements: D1PreparedStatement[] = [
     database
@@ -98,6 +125,30 @@ export async function synchronizeCourierStatus(
       ),
   ];
 
+  if (!stale) {
+    // A NOT NULL failure aborts the entire D1 batch if another action won the race.
+    statements[0] = database
+      .prepare(
+        `INSERT INTO webhook_inbox
+        (id, store_id, source, external_event_id, received_at, processed_at, error, payload_json)
+       VALUES (?, ?, CASE WHEN
+         (SELECT status FROM orders WHERE id = ? AND store_id = ?) = ?
+         THEN ? ELSE NULL END, ?, ?, ?, NULL, ?)`,
+      )
+      .bind(
+        createUuidV7(now.getTime()),
+        STORE_ID,
+        shipment.order_id,
+        STORE_ID,
+        shipment.order_status,
+        inboxSource,
+        input.eventId,
+        timestamp,
+        timestamp,
+        input.rawPayload,
+      );
+  }
+
   if (stale) {
     const duplicate = await executeBatch(database, statements, inboxSource, input.eventId);
     return duplicate
@@ -115,7 +166,7 @@ export async function synchronizeCourierStatus(
       .bind(input.rawStatus, input.normalizedStatus, timestamp, shipment.shipment_id, STORE_ID),
   );
 
-  const actor: Actor = `courier:${shipment.courier}`;
+  const actor: Actor = input.source === 'manual' ? input.actor : `courier:${shipment.courier}`;
   const transitionEvents = buildTransitionEvents(
     shipment.order_id,
     shipment.order_status,
@@ -275,7 +326,7 @@ function buildTransitionEvents(
   const target = orderTargetFor(courierStatus);
   if (target === null || hasReachedTarget(currentStatus, target)) return [];
 
-  const path = transitionPath(currentStatus, target);
+  const path = input.source === 'manual' ? [target] : transitionPath(currentStatus, target);
   let order = { id: orderId, noAnswerAttempts: 0, status: currentStatus };
 
   try {
@@ -287,7 +338,7 @@ function buildTransitionEvents(
           rawStatus: input.rawStatus,
           trackingNumber: input.trackingNumber,
         },
-        reason: `courier_${input.normalizedStatus}`,
+        reason: `${input.source === 'manual' ? 'manual' : 'courier'}_${input.normalizedStatus}`,
       });
       order = result.next;
       return result.event;
@@ -343,6 +394,13 @@ async function executeBatch(
     await database.batch(statements);
     return false;
   } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('NOT NULL constraint failed: webhook_inbox.source')
+    ) {
+      if (await inboxEventExists(database, source, eventId)) return true;
+      throw new ShipmentStatusTransitionError();
+    }
     if (
       error instanceof Error &&
       error.message.includes('UNIQUE constraint failed: webhook_inbox.store_id') &&

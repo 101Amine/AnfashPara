@@ -63,6 +63,12 @@ describe('order transition table', () => {
 });
 
 describe('transition', () => {
+  it('allows operators to record manual delivery outcomes but never settle an order', () => {
+    const actor = 'user:admin@example.com';
+    expect(transition(orderAt('SHIPPED'), 'DELIVERED', { actor }).next.status).toBe('DELIVERED');
+    expect(transition(orderAt('SHIPPED'), 'REFUSED', { actor }).next.status).toBe('REFUSED');
+    expect(() => transition(orderAt('DELIVERED'), 'SETTLED', { actor })).toThrow(UnauthorizedActor);
+  });
   it.each(legalEdges)(
     'returns an immutable next order and event for $from → $to',
     ({ from, to }) => {

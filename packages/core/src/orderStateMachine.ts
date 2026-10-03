@@ -77,8 +77,8 @@ export const ACTOR_GUARDS: ActorGuardTable = {
   CANCELLED: {},
   PACKED: { SHIPPED: ['courier', 'system', 'user'] },
   SHIPPED: {
-    DELIVERED: ['courier', 'system'],
-    REFUSED: ['courier', 'system'],
+    DELIVERED: ['courier', 'system', 'user'],
+    REFUSED: ['courier', 'system', 'user'],
   },
   DELIVERED: { SETTLED: ['reconciliation'] },
   REFUSED: { RETURNED: ['courier', 'system', 'user'] },

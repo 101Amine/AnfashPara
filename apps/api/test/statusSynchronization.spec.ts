@@ -2,22 +2,296 @@
 import { createExecutionContext, env } from 'cloudflare:test';
 import { courierSuccess, FakeCourierClient } from '@para/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { MiddlewareHandler } from 'hono';
 
-import type { AppBindings } from '../src/auth/cloudflareAccess';
-import worker, { runShipmentStatusPoll } from '../src/index';
+import type { AppBindings, AppEnvironment } from '../src/auth/cloudflareAccess';
+import worker, { createApp, runShipmentStatusPoll } from '../src/index';
+import { renderAdminOrdersPage } from '../src/modules/admin-orders/adminOrders.view';
+import {
+  ShipmentStatusTransitionError,
+  synchronizeCourierStatus,
+} from '../src/modules/status-sync/statusSync.service';
 import { getStockBySku } from '../src/modules/inventory/inventory.service';
 import { mapCourierStatus } from '../src/modules/status-sync/courierStatus.mapper';
 import { pollOpenShipments } from '../src/modules/status-sync/statusPolling.service';
 
 const TEST_SECRET = 'test-only-courier-webhook-secret-with-enough-entropy';
 const CUSTOMER_ID = 'customer-1';
-const ORDER_ID = 'order-1';
-const SHIPMENT_ID = 'shipment-1';
+const ORDER_ID = '01995f0d-9b4d-7000-8000-000000000001';
+const SHIPMENT_ID = '01995f0d-9b4d-7000-8000-000000000002';
 const TRACKING_NUMBER = 'TRACK-101';
 const SKU = 'BIO-OIL-125ML';
 const OCCURRED_AT = '2026-10-03T12:00:00.000Z';
 
 beforeEach(async () => resetDatabase('PACKED'));
+
+const authenticatedAccess: MiddlewareHandler<AppEnvironment> = async (context, next) => {
+  context.set('accessIdentity', { email: 'admin@anfashpara.test', subject: 'admin' });
+  await next();
+};
+
+describe('manual shipment workflow', () => {
+  beforeEach(async () => {
+    await env.DB.prepare('UPDATE shipments SET tracking_number = ? WHERE id = ?')
+      .bind('SELF-PARA-101', SHIPMENT_ID)
+      .run();
+  });
+
+  it('requires Access authentication before writing any state', async () => {
+    const response = await createApp().request(
+      manualUrl(),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"action":"picked"}',
+      },
+      { ...env, CF_ACCESS_AUD: 'test', CF_ACCESS_TEAM_DOMAIN: 'anfashpara.cloudflareaccess.com' },
+    );
+    expect(response.status).toBe(401);
+    expect(await rowCount('order_events')).toBe(0);
+  });
+
+  it('rejects a forged Access assertion before touching the database', async () => {
+    const response = await createApp().request(
+      manualUrl(),
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cf-Access-Jwt-Assertion': 'forged.token.value',
+        },
+        body: '{"action":"picked"}',
+      },
+      { ...env, CF_ACCESS_AUD: 'test', CF_ACCESS_TEAM_DOMAIN: 'anfashpara.cloudflareaccess.com' },
+    );
+    expect(response.status).toBe(401);
+    expect(await rowCount('shipment_events')).toBe(0);
+    expect(await readOrderStatus()).toBe('PACKED');
+  });
+
+  it('ships and delivers with a verified user actor, and replays have no effect', async () => {
+    expect((await manualAction('picked')).status).toBe(200);
+    expect(await readOrderStatus()).toBe('SHIPPED');
+    expect(await getStockBySku(env.DB, SKU)).toBe(8);
+    await expect((await manualAction('picked')).json()).resolves.toEqual({ duplicate: true });
+    expect((await manualAction('delivered')).status).toBe(200);
+    expect(await readOrderStatus()).toBe('DELIVERED');
+    await expect((await manualAction('delivered')).json()).resolves.toEqual({ duplicate: true });
+    // Replaying the earlier shipping action after delivery is also harmless.
+    await expect((await manualAction('picked')).json()).resolves.toEqual({ duplicate: true });
+    expect(await readCustomerCounters()).toEqual({ delivered_count: 1, refused_count: 0 });
+    expect(await rowCount('shipment_events')).toBe(2);
+    expect(await rowCount('order_events')).toBe(2);
+    expect(await rowCount('inventory_movements')).toBe(2);
+    const events = await env.DB.prepare('SELECT actor, reason FROM order_events').all();
+    expect(events.results).toEqual([
+      { actor: 'user:admin@anfashpara.test', reason: 'manual_picked' },
+      { actor: 'user:admin@anfashpara.test', reason: 'manual_delivered' },
+    ]);
+  });
+
+  it('refuses and returns a shipped parcel, restoring stock only once', async () => {
+    await manualAction('picked');
+    await manualAction('refused');
+    expect(await getStockBySku(env.DB, SKU)).toBe(8);
+    await manualAction('returned');
+    await manualAction('returned');
+    expect(await readOrderStatus()).toBe('RETURNED');
+    expect(await getStockBySku(env.DB, SKU)).toBe(10);
+    expect(await rowCount('order_events')).toBe(3);
+    expect(await rowCount('shipment_events')).toBe(3);
+    expect(await rowCount('inventory_movements')).toBe(3);
+    expect(await readCustomerCounters()).toEqual({ delivered_count: 0, refused_count: 1 });
+  });
+
+  it('rejects skipped edges and conflicting outcomes with controlled 409 responses', async () => {
+    expect((await manualAction('delivered')).status).toBe(409);
+    expect((await manualAction('returned')).status).toBe(409);
+    expect(await rowCount('webhook_inbox')).toBe(0);
+    await manualAction('picked');
+    await manualAction('delivered');
+    expect((await manualAction('refused')).status).toBe(409);
+    expect(await readOrderStatus()).toBe('DELIVERED');
+  });
+
+  it('validates IDs and actions and disallows SETTLED or caller-owned actors', async () => {
+    expect((await manualAction('SETTLED')).status).toBe(400);
+    expect((await manualAction('picked', { actor: 'system' })).status).toBe(400);
+    const invalidId = await createApp(authenticatedAccess).request(
+      manualUrl().replace(ORDER_ID, 'bad-id'),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"action":"picked"}',
+      },
+      env,
+    );
+    expect(invalidId.status).toBe(400);
+    const malformed = await createApp(authenticatedAccess).request(
+      manualUrl(),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{broken',
+      },
+      env,
+    );
+    expect(malformed.status).toBe(400);
+    expect(await rowCount('order_events')).toBe(0);
+  });
+
+  it('rejects mismatched order/shipment IDs, another store, and API-managed shipments', async () => {
+    const otherId = '01995f0d-9b4d-7000-8000-000000000099';
+    const response = await createApp(authenticatedAccess).request(
+      manualUrl().replace(ORDER_ID, otherId),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"action":"picked"}',
+      },
+      env,
+    );
+    expect(response.status).toBe(404);
+    await env.DB.prepare("UPDATE shipments SET tracking_number = 'TRACK-API'").run();
+    expect((await manualAction('picked')).status).toBe(409);
+    await env.DB.prepare("UPDATE shipments SET store_id = 'other-store'").run();
+    expect((await manualAction('picked')).status).toBe(404);
+  });
+
+  it('rolls back events and shipment/order state when stock cannot commit', async () => {
+    await env.DB.prepare('DROP TABLE inventory_movements').run();
+    expect((await manualAction('picked')).status).toBe(503);
+    expect(await readOrderStatus()).toBe('PACKED');
+    expect(await rowCount('shipment_events')).toBe(0);
+    expect(await rowCount('order_events')).toBe(0);
+    expect(await rowCount('webhook_inbox')).toBe(0);
+  });
+
+  it('aborts a stale write if another operation changes state before the batch commits', async () => {
+    const database = {
+      prepare: env.DB.prepare.bind(env.DB),
+      batch: async (statements: D1PreparedStatement[]) => {
+        await env.DB.prepare("UPDATE orders SET status = 'CANCELLED'").run();
+        return env.DB.batch(statements);
+      },
+    } as D1Database;
+    await expect(
+      synchronizeCourierStatus(database, {
+        source: 'manual',
+        actor: 'user:admin@anfashpara.test',
+        orderId: ORDER_ID,
+        shipmentId: SHIPMENT_ID,
+        eventId: 'race-event',
+        normalizedStatus: 'picked',
+        occurredAt: OCCURRED_AT,
+        rawPayload: '{}',
+        rawStatus: 'MANUAL_PICKED',
+        trackingNumber: 'SELF-PARA-101',
+      }),
+    ).rejects.toBeInstanceOf(ShipmentStatusTransitionError);
+    expect(await readOrderStatus()).toBe('CANCELLED');
+    expect(await rowCount('shipment_events')).toBe(0);
+    expect(await rowCount('inventory_movements')).toBe(1);
+  });
+
+  it('deduplicates simultaneous submissions atomically', async () => {
+    const responses = await Promise.all([manualAction('picked'), manualAction('picked')]);
+    expect(responses.map((response) => response.status)).toEqual([200, 200]);
+    expect(await rowCount('order_events')).toBe(1);
+    expect(await rowCount('shipment_events')).toBe(1);
+    expect(await getStockBySku(env.DB, SKU)).toBe(8);
+  });
+
+  it('renders French form results privately and rejects foreign or missing form origins', async () => {
+    const submit = (origin?: string) =>
+      createApp(authenticatedAccess).request(
+        manualUrl(),
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            ...(origin ? { Origin: origin } : {}),
+          },
+          body: 'action=picked',
+        },
+        env,
+      );
+    expect((await submit('https://evil.test')).status).toBe(403);
+    expect((await submit()).status).toBe(403);
+    const response = await submit('https://example.com');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store, max-age=0');
+    expect(await response.text()).toContain('Statut du colis mis à jour.');
+    const error = await createApp(authenticatedAccess).request(
+      manualUrl(),
+      {
+        method: 'POST',
+        headers: { Origin: 'https://example.com' },
+        body: new URLSearchParams({ action: 'returned' }),
+      },
+      env,
+    );
+    expect(error.status).toBe(409);
+    expect(await error.text()).toContain('Retour aux commandes');
+  });
+
+  it('shows only eligible manual actions in the mobile French queue', async () => {
+    for (const [status, labels] of [
+      ['PACKED', ['Remis / Expédié']],
+      ['SHIPPED', ['Livré', 'Refusé']],
+      ['REFUSED', ['Retourné']],
+      ['DELIVERED', []],
+    ] as const) {
+      const page = String(
+        await renderAdminOrdersPage({
+          identityEmail: 'admin@test',
+          now: new Date(),
+          query: { q: '' },
+          page: {
+            nextCursor: null,
+            orders: [
+              {
+                id: ORDER_ID,
+                status,
+                shipmentId: SHIPMENT_ID,
+                shipmentManual: true,
+                shipmentLabelAvailable: false,
+                city: 'Rabat',
+                codAmountCentimes: 100,
+                customerName: 'Test',
+                orderNumber: 'PARA-101',
+                phoneE164: '+212612345678',
+                placedAt: OCCURRED_AT,
+                statusStartedAt: OCCURRED_AT,
+              },
+            ],
+          },
+        }),
+      );
+      for (const label of ['Remis / Expédié', 'Livré', 'Refusé', 'Retourné']) {
+        expect(page.includes(`type="submit">${label}</button>`)).toBe(
+          (labels as readonly string[]).includes(label),
+        );
+      }
+      expect(page).toContain('name="viewport"');
+    }
+  });
+});
+
+function manualUrl() {
+  return `https://example.com/admin/orders/${ORDER_ID}/shipments/${SHIPMENT_ID}/status`;
+}
+function manualAction(action: string, extra: Record<string, string> = {}) {
+  return createApp(authenticatedAccess).request(
+    manualUrl(),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...extra }),
+    },
+    env,
+  );
+}
 
 describe('courier status mapping', () => {
   it('normalizes common English and French statuses without accepting SETTLED', () => {

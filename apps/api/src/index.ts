@@ -28,6 +28,7 @@ import {
   type OutboxSummary,
 } from './modules/outbox/outbox.service';
 import { registerCourierWebhookRoutes } from './modules/status-sync/courierWebhook.routes';
+import { registerManualShipmentRoutes } from './modules/status-sync/manualShipment.routes';
 import {
   pollOpenShipments,
   type PollingSummary,
@@ -65,6 +66,7 @@ export const createApp = (
   registerOutboxRoutes(app);
   registerDashboardRoutes(app);
   registerInventoryOperationsRoutes(app);
+  registerManualShipmentRoutes(app);
 
   app.get('/admin/whoami', (context) =>
     context.json({ email: context.get('accessIdentity').email }),
