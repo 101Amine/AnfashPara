@@ -32,12 +32,13 @@ export async function ingestOrderWebhook(
   rawPayload: string,
   payload: OrderWebhookPayload,
   now = new Date(),
+  source = WEBHOOK_SOURCE,
 ): Promise<OrderIngestionResult> {
   const duplicate = await database
     .prepare(
       'SELECT id FROM webhook_inbox WHERE store_id = ? AND source = ? AND external_event_id = ? LIMIT 1',
     )
-    .bind(STORE_ID, WEBHOOK_SOURCE, payload.eventId)
+    .bind(STORE_ID, source, payload.eventId)
     .first<{ id: string }>();
 
   if (duplicate !== null) {
@@ -93,7 +94,7 @@ export async function ingestOrderWebhook(
           (id, store_id, source, external_event_id, received_at, processed_at, error, payload_json)
          VALUES (?, ?, ?, ?, ?, ?, NULL, ?)`,
       )
-      .bind(inboxId, STORE_ID, WEBHOOK_SOURCE, payload.eventId, timestamp, timestamp, rawPayload),
+      .bind(inboxId, STORE_ID, source, payload.eventId, timestamp, timestamp, rawPayload),
     database
       .prepare(
         `INSERT INTO customers
