@@ -1,0 +1,7 @@
+{
+  "carrier": "manual-test-carrier",
+  "trackingNumber": "TEST-RBA-0001",
+  "deliveryFeeCentimes": 3500,
+  "returnFeeCentimes": 1500,
+  "labelUrl": "https://example.test/labels/TEST-RBA-0001.pdf"
+}

@@ -1,0 +1,10 @@
+{
+  "shipmentId": "0199a001-2000-7000-8000-000000000001",
+  "orderId": "0199a001-1000-7000-8000-000000000001",
+  "carrier": "manual-test-carrier",
+  "trackingNumber": "TEST-RBA-0001",
+  "deliveryFeeCentimes": 3500,
+  "returnFeeCentimes": 1500,
+  "labelUrl": "https://example.test/labels/TEST-RBA-0001.pdf",
+  "status": "created"
+}

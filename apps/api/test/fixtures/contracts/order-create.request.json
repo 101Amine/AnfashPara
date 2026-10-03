@@ -1,0 +1,24 @@
+{
+  "customer": {
+    "name": "Salma Test",
+    "phone": "06 12 34 56 78",
+    "city": "Rabat",
+    "address": "12 rue Exemple, Agdal",
+    "note": "Appeler avant livraison"
+  },
+  "items": [
+    {
+      "sku": "BIO-OIL-125ML",
+      "quantity": 2
+    },
+    {
+      "sku": "MUSTELA-VERGETURES-250ML",
+      "quantity": 1
+    }
+  ],
+  "attribution": {
+    "utmSource": "instagram",
+    "utmCampaign": "launch-test",
+    "utmContent": "hook-03"
+  }
+}
