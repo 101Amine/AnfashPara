@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 
 import type { AppBindings } from '../../auth/cloudflareAccess';
+import { ManualCourierClient } from './manualCourierClient';
 
 const courierConfigSchema = z.object({
   accountId: z.string().trim().min(1),
@@ -53,6 +54,12 @@ export class CourierConfigurationError extends Error {
 }
 
 export function createCourierClientFromBindings(bindings: AppBindings): CourierClient {
+  const mode = bindings.COURIER_MODE?.trim() || 'manual';
+  if (mode === 'manual') {
+    return new ManualCourierClient(bindings.COURIER_NAME?.trim() || 'self-delivery');
+  }
+  if (mode !== 'api') throw new CourierConfigurationError();
+
   const config = courierConfigSchema.safeParse({
     accountId: bindings.COURIER_ACCOUNT_ID,
     apiToken: bindings.COURIER_API_TOKEN,
