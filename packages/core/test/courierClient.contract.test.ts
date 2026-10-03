@@ -8,11 +8,7 @@ import {
   type CreateParcelInput,
   type CreateParcelResult,
 } from '@para/core';
-import {
-  FakeCourierClient,
-  courierFailure,
-  courierSuccess,
-} from '@para/core/testing';
+import { FakeCourierClient, courierFailure, courierSuccess } from '@para/core/testing';
 
 const parcelInput: CreateParcelInput = {
   codAmountCentimes: 24_500,
