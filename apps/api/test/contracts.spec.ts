@@ -19,7 +19,7 @@ describe('internal API contract fixtures', () => {
   it('lets the client send SKUs and quantities but never authoritative prices', () => {
     expect(orderRequest.items).toEqual([
       { quantity: 2, sku: 'BIO-OIL-125ML' },
-      { quantity: 1, sku: 'MUSTELA-VERGETURES-250ML' },
+      { quantity: 1, sku: 'MUSTELA-250ML' },
     ]);
     expect(JSON.stringify(orderRequest)).not.toMatch(/price|cogs|total|codAmount/i);
   });

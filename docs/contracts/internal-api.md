@@ -22,8 +22,9 @@ Required headers:
 - `Idempotency-Key: <client-generated unique value>`
 
 There is no signature header. A signing secret embedded in browser JavaScript would be public and
-would provide no authentication. The implementation ticket must instead add strict validation,
-rate limiting/abuse protection and server-side price lookup.
+would provide no authentication. The implemented boundary instead uses strict Zod validation, a
+16 KiB body limit, a per-IP burst limit and server-side price lookup. The in-Worker burst limiter is
+best-effort per Worker isolate; add a Cloudflare edge rate-limit rule before a larger public launch.
 
 The request contains:
 
@@ -36,6 +37,32 @@ Those values are calculated or assigned by the server.
 
 The original ticket's "external event ID" is replaced by the `Idempotency-Key`. Reusing a key with
 the same request must return the original result; reusing it with a different request must fail.
+
+The key is stored in `webhook_inbox` under source `public-api`; only its SHA-256-derived value is
+used as the order's external ID and order-number seed. The normalized validated request is stored as
+the idempotency payload. A replay with that same payload returns HTTP `200`, `duplicate: true` and
+the original order result. A different payload returns HTTP `409 idempotency_conflict`.
+
+For a first request the API returns HTTP `201`:
+
+```json
+{
+  "duplicate": false,
+  "orderId": "0199a001-1000-7000-8000-000000000001",
+  "orderNumber": "PARA-63CDA17FA3E2B740",
+  "status": "CONFIRMING",
+  "codAmountCentimes": 28700,
+  "currency": "MAD"
+}
+```
+
+The route converts the validated request to the existing order-ingestion contract and submits one
+D1 batch. That transaction writes the idempotency inbox row, customer upsert, order, frozen-price
+items, `NEW → CONFIRMING` event and confirmation outbox row. A unique inbox constraint resolves two
+concurrent deliveries safely: one wins, the other loads and returns the committed result.
+
+Shipping is currently `0` because no first-party delivery-zone pricing rule exists yet. It is
+assigned by the server and is never accepted from the browser.
 
 Fixtures:
 

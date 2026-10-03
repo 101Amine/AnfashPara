@@ -14,6 +14,7 @@ import { registerConfirmationRoutes } from './modules/confirmation/confirmation.
 import { registerLabelRoutes } from './modules/labels/labels.routes';
 import type { LabelFetcher } from './modules/labels/labels.service';
 import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
+import { registerPublicOrderRoutes } from './modules/public-orders/publicOrder.routes';
 import { registerParcelRoutes } from './modules/shipping/parcel.routes';
 import { registerCourierWebhookRoutes } from './modules/status-sync/courierWebhook.routes';
 import {
@@ -45,6 +46,7 @@ export const createApp = (
   registerConfirmationRoutes(app);
   registerLabelRoutes(app, labelFetcher);
   registerParcelRoutes(app, courierClientFactory);
+  registerPublicOrderRoutes(app);
   registerOrderWebhookRoutes(app);
   registerCourierWebhookRoutes(app);
 
