@@ -383,7 +383,10 @@ export async function renderAdminOrdersPage(
               <div class="eyebrow">Administration · Anfash Para</div>
               <h1>File des commandes</h1>
             </div>
-            <div class="identity">Connecté·e : ${model.identityEmail}</div>
+            <div class="identity">
+              Connecté·e : ${model.identityEmail}<br />
+              <a href="/admin/settlements">Aperçu des règlements</a>
+            </div>
           </header>
 
           <form class="filters" method="get" action="/admin/orders">

@@ -1,0 +1,4 @@
+tracking_number,cod_collected,delivery_fee,return_fee,net_amount,courier_status
+SELF-DEMO-001,250.00,30.00,0.00,220.00,delivered
+SELF-DEMO-002,0.00,0.00,20.00,0.00,returned
+SELF-DEMO-003,99.90,25.00,0.00,74.90,delivered
