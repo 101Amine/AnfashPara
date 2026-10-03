@@ -1,16 +1,9 @@
 // apps/api/src/contracts/fulfillment.ts
-export const SHIPMENT_STATUSES = [
-  'created',
-  'picked',
-  'in_transit',
-  'out_for_delivery',
-  'delivered',
-  'refused',
-  'returned',
-  'lost',
-] as const;
+import { COURIER_STATUS_CODES, type CourierStatusCode } from '@para/core';
 
-export type ShipmentStatus = (typeof SHIPMENT_STATUSES)[number];
+export const SHIPMENT_STATUSES = COURIER_STATUS_CODES;
+
+export type ShipmentStatus = CourierStatusCode;
 
 export interface ShipmentCreateRequest {
   readonly carrier: string;
