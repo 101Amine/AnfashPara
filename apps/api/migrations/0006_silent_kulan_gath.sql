@@ -1,0 +1,1 @@
+ALTER TABLE `outbox` ADD `claim_token` text;

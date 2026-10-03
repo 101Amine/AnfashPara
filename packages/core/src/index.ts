@@ -2,6 +2,7 @@ export * from './courier';
 export * from './money';
 export * from './orderStateMachine';
 export * from './phone';
+export * from './outbox';
 export * from './settlementParser';
 export * from './settlementReconciliation';
 

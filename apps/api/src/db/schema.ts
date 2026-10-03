@@ -402,6 +402,7 @@ export const outbox = sqliteTable(
     nextAttemptAt: text('next_attempt_at'),
     lastError: text('last_error'),
     processedAt: text('processed_at'),
+    claimToken: text('claim_token'),
     createdAt: text('created_at').notNull(),
     updatedAt: text('updated_at').notNull(),
   },
