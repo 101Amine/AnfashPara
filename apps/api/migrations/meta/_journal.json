@@ -43,6 +43,13 @@
       "when": 1791045960807,
       "tag": "0005_even_lilith",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791047662513,
+      "tag": "0006_silent_kulan_gath",
+      "breakpoints": true
     }
   ]
 }
