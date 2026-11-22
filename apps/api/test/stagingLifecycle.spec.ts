@@ -6,6 +6,7 @@ import type { AppEnvironment } from '../src/auth/cloudflareAccess';
 import { createApp } from '../src/index';
 import { resetOrderDatabase } from './helpers/orderDatabase';
 import migration from '../migrations/0002_full_order_schema.sql?raw';
+import reservationsMigration from '../migrations/0008_stock_reservations.sql?raw';
 const run = 'abcdef0123456789abcdef0123456789';
 const ts = '2026-10-03T12:00:00.000Z';
 const uuid = (n: number) => `0199b001-1000-7000-8000-${String(n).padStart(12, '0')}`;
@@ -21,6 +22,7 @@ const access: MiddlewareHandler<AppEnvironment> = async (c, next) => {
 const bindings = () => ({ ...env, ENVIRONMENT: 'staging' });
 beforeEach(async () => {
   for (const name of [
+    'stock_reservations',
     'inventory_movements',
     'confirmation_attempts',
     'shipment_events',
@@ -28,6 +30,8 @@ beforeEach(async () => {
   ])
     await env.DB.prepare(`DROP TABLE IF EXISTS ${name}`).run();
   await resetOrderDatabase(env.DB);
+  for (const statement of reservationsMigration.split('--> statement-breakpoint'))
+    if (statement.trim()) await env.DB.prepare(statement).run();
   for (const statement of migration.split('--> statement-breakpoint'))
     if (
       /CREATE TABLE `(?:inventory_movements|confirmation_attempts|shipment_events|shipments)`|CREATE (?:UNIQUE )?INDEX `(?:inventory_|confirmation_|shipments_|shipment_events_)/u.test(
@@ -84,6 +88,57 @@ it('reports synthetic counts without phone, address or name', async () => {
   expect(text).not.toContain('+212');
   expect(text).not.toContain('Adresse');
   expect(text).toContain('customerDelivered');
+  expect(JSON.parse(text).orders[0]).toMatchObject({
+    reservations: 0,
+    activeReservations: 0,
+    releasedReservations: 0,
+    consumedReservations: 0,
+    inventoryDelta: -1,
+  });
+});
+it('reports reservation quantities and refuses to archive a run with active stock holds', async () => {
+  await env.DB.prepare(
+    `INSERT INTO stock_reservations
+    (id,store_id,order_id,sku,quantity,status,created_at,created_by)
+    VALUES (?,'para-main',?,'BIO-OIL-125ML',2,'active',?,'system')`,
+  )
+    .bind(uuid(300), uuid(1), ts)
+    .run();
+  const response = await createApp(access).request(
+    origin + '/admin/testing/lifecycle?run=' + run,
+    {},
+    bindings(),
+  );
+  const data = await response.json<{ orders: Record<string, unknown>[] }>();
+  expect(data.orders[0]).toMatchObject({
+    reservations: 1,
+    activeReservations: 2,
+    releasedReservations: 0,
+    consumedReservations: 0,
+  });
+  expect((await archive()).status).toBe(409);
+  expect(
+    (
+      await env.DB.prepare('SELECT SUM(quantity) AS n FROM inventory_movements').first<{
+        n: number;
+      }>()
+    )?.n,
+  ).toBe(-1);
+  expect(
+    (await env.DB.prepare('SELECT status FROM outbox').first<{ status: string }>())?.status,
+  ).toBe('pending');
+});
+it('preserves unfinished orders and exposes the acquisition flag in preflight', async () => {
+  await env.DB.prepare("UPDATE orders SET status='CONFIRMING' WHERE id=?").bind(uuid(1)).run();
+  expect((await archive()).status).toBe(409);
+  for (const enabled of [false, true]) {
+    const response = await createApp(access).request(
+      origin + '/admin/testing/lifecycle',
+      {},
+      { ...bindings(), STOCK_RESERVATIONS_ENABLED: String(enabled) },
+    );
+    expect(await response.json()).toMatchObject({ reservationsEnabled: enabled });
+  }
 });
 it('archives idempotently, restores stock and stops pending synthetic outbox sends', async () => {
   expect((await archive()).status).toBe(200);

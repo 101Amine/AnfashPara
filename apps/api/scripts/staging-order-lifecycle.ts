@@ -38,6 +38,7 @@ type CreatedOrder = {
   eventId: string;
   orderId: string;
   orderNumber: string;
+  payload: string;
 };
 
 type OrderIngestionResponse =
@@ -65,7 +66,12 @@ async function main(): Promise<void> {
   });
   assert(preflight.status === 200, 'Preflight failed');
   const deployed = z
-    .object({ environment: z.literal('staging'), mode: z.literal('manual'), gitSha: z.string() })
+    .object({
+      environment: z.literal('staging'),
+      mode: z.literal('manual'),
+      gitSha: z.string(),
+      reservationsEnabled: z.literal(true),
+    })
     .parse(await preflight.json());
   assert(
     !configuration.STAGING_EXPECTED_SHA || deployed.gitSha === configuration.STAGING_EXPECTED_SHA,
@@ -116,14 +122,51 @@ async function main(): Promise<void> {
       assert(response.status === 201, `${orderNumber}: ingestion returned HTTP ${response.status}`);
       assert(!result.duplicate, `${orderNumber}: fresh event was reported as duplicate`);
       assert(result.status === 'CONFIRMING', `${orderNumber}: expected CONFIRMING after ingestion`);
-      return { caseName, eventId, orderId: result.orderId, orderNumber };
+      return { caseName, eventId, orderId: result.orderId, orderNumber, payload };
     }),
   );
 
   printOrders('Created five staging orders', orders);
+  const created = await report();
+  assert(
+    created.orders.every(
+      (r) =>
+        r.reservations === 1 &&
+        r.activeReservations === 1 &&
+        r.releasedReservations === 0 &&
+        r.consumedReservations === 0 &&
+        r.inventoryDelta === 0,
+    ),
+    'Ingestion did not reserve exactly one unit per order',
+  );
+  const replay = await signedPost(
+    '/api/webhooks/orders',
+    'X-Para-Signature',
+    configuration.ORDER_WEBHOOK_SECRET,
+    findOrder(orders, 'duplicate-replay').payload,
+  );
+  assert(
+    replay.status === 200 && (await readJson<OrderIngestionResponse>(replay)).duplicate,
+    'Order ingestion replay was not deduplicated',
+  );
+  assert(
+    JSON.stringify(created) === JSON.stringify(await report()),
+    'Order replay changed reservations',
+  );
 
   await runAdminActions(orders);
   const packed = await report();
+  for (const row of packed.orders) {
+    const cancelled = row.status === 'CANCELLED';
+    assert(
+      row.reservations === 1 &&
+        row.activeReservations === (cancelled ? 0 : 1) &&
+        row.releasedReservations === (cancelled ? 1 : 0) &&
+        row.consumedReservations === 0 &&
+        row.inventoryDelta === 0,
+      'Confirmation/cancellation reservation mismatch',
+    );
+  }
   for (const order of orders.filter(
     (o) => !['customer-cancelled', 'three-no-answer'].includes(o.caseName),
   )) {
@@ -148,6 +191,18 @@ async function main(): Promise<void> {
   }
 
   const delivered = findOrder(orders, 'delivered');
+  const shipped = await report();
+  for (const row of shipped.orders) {
+    const cancelled = row.status === 'CANCELLED';
+    assert(
+      row.reservations === 1 &&
+        row.activeReservations === 0 &&
+        row.releasedReservations === (cancelled ? 1 : 0) &&
+        row.consumedReservations === (cancelled ? 0 : 1) &&
+        row.inventoryDelta === (cancelled ? 0 : -1),
+      'Shipment did not consume reservation exactly once',
+    );
+  }
   const refusedReturned = findOrder(orders, 'refused-returned');
   const duplicateReplay = findOrder(orders, 'duplicate-replay');
 
@@ -188,6 +243,15 @@ async function main(): Promise<void> {
         row.orderEvents === e[4],
       'Unexpected final counts',
     );
+    const cancelled = row.status === 'CANCELLED';
+    assert(
+      row.reservations === 1 &&
+        row.activeReservations === 0 &&
+        row.releasedReservations === (cancelled ? 1 : 0) &&
+        row.consumedReservations === (cancelled ? 0 : 1) &&
+        row.inventoryDelta === (row.status === 'DELIVERED' ? -1 : 0),
+      'Final reservation/return mismatch',
+    );
   });
   const archive = await fetch(`${baseUrl}/admin/testing/lifecycle`, {
     method: 'POST',
@@ -202,6 +266,11 @@ async function main(): Promise<void> {
     signal: AbortSignal.timeout(30000),
   });
   assert(archive.status === 200, 'Archive failed; preserve run');
+  const archived = await report();
+  assert(
+    archived.orders.every((r) => r.archived === 1 && r.activeReservations === 0),
+    'Archive left active reservations or unfinished orders',
+  );
   const evidence = {
     run: runId,
     result: 'passed',
@@ -213,6 +282,11 @@ async function main(): Promise<void> {
       shipmentEvents: r.shipmentEvents,
       movements: r.movements,
       orderEvents: r.orderEvents,
+      reservations: r.reservations,
+      released: r.releasedReservations,
+      consumed: r.consumedReservations,
+      active: r.activeReservations,
+      inventoryDelta: r.inventoryDelta,
     })),
   };
   await writeFile('staging-lifecycle-report.json', JSON.stringify(evidence, null, 2));
@@ -389,6 +463,12 @@ async function main(): Promise<void> {
               customerDelivered: z.number().int(),
               customerRefused: z.number().int(),
               inboxCount: z.number().int(),
+              reservations: z.number().int(),
+              activeReservations: z.number().int(),
+              releasedReservations: z.number().int(),
+              consumedReservations: z.number().int(),
+              inventoryDelta: z.number().int(),
+              archived: z.number().int(),
             }),
           )
           .length(5),
