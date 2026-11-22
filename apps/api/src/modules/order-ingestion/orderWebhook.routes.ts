@@ -2,6 +2,7 @@
 import type { Hono } from 'hono';
 
 import type { AppEnvironment } from '../../auth/cloudflareAccess';
+import { InsufficientStockError } from '../inventory/stockReservation.service';
 import { orderWebhookSchema } from './orderWebhook.schema';
 import { ingestOrderWebhook, OrderIngestionValidationError } from './orderWebhook.service';
 import {
@@ -52,7 +53,16 @@ export function registerOrderWebhookRoutes(app: Hono<AppEnvironment>): void {
     }
 
     try {
-      const result = await ingestOrderWebhook(context.env.DB, rawPayload, parsedPayload.data);
+      const result = await ingestOrderWebhook(
+        context.env.DB,
+        rawPayload,
+        parsedPayload.data,
+        new Date(),
+        undefined,
+        {
+          reserveStock: context.env.STOCK_RESERVATIONS_ENABLED === 'true',
+        },
+      );
 
       if (result.duplicate) {
         return context.json({ duplicate: true });
@@ -60,6 +70,9 @@ export function registerOrderWebhookRoutes(app: Hono<AppEnvironment>): void {
 
       return context.json(result, 201);
     } catch (error) {
+      if (error instanceof InsufficientStockError) {
+        return context.json({ error: { code: 'insufficient_stock', message: error.message } }, 409);
+      }
       if (error instanceof OrderIngestionValidationError) {
         return context.json({ error: { code: error.code, message: error.message } }, 422);
       }

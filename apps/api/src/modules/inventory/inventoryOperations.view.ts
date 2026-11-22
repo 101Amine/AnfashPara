@@ -91,6 +91,11 @@ export function renderInventoryOperations(
           <nav>
             <a href="/admin/orders">Commandes</a><a href="/admin/dashboard">Tableau de bord</a>
           </nav>
+          <p>
+            <a href="/admin/inventory/reservations"
+              >Stock disponible et régularisation des réservations</a
+            >
+          </p>
           <h1>Registre de stock</h1>
           ${message ? html`<p role="status">${message}</p>` : ''}
           <p>

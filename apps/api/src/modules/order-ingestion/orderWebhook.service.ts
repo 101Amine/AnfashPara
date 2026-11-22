@@ -2,6 +2,12 @@
 import { normalizeMoroccanMobile, transition } from '@para/core';
 
 import { createUuidV7 } from '../../shared/uuidV7';
+import {
+  InsufficientStockError,
+  isStockGuardFailure,
+  reserveStockStatement,
+  type ReservationOptions,
+} from '../inventory/stockReservation.service';
 import type { OrderWebhookPayload } from './orderWebhook.schema';
 
 const STORE_ID = 'para-main';
@@ -33,6 +39,7 @@ export async function ingestOrderWebhook(
   payload: OrderWebhookPayload,
   now = new Date(),
   source = WEBHOOK_SOURCE,
+  options: ReservationOptions = {},
 ): Promise<OrderIngestionResult> {
   const duplicate = await database
     .prepare(
@@ -174,6 +181,17 @@ export async function ingestOrderWebhook(
     );
   }
 
+  if (options.reserveStock) {
+    // HTTP schemas reject repeated SKUs; also protect internal service callers.
+    const quantities = new Map<string, number>();
+    for (const { sku, quantity } of payload.order.items) {
+      quantities.set(sku, (quantities.get(sku) ?? 0) + quantity);
+    }
+    for (const [sku, quantity] of quantities) {
+      statements.push(reserveStockStatement(database, STORE_ID, orderId, sku, quantity, now));
+    }
+  }
+
   statements.push(
     database
       .prepare(
@@ -218,6 +236,7 @@ export async function ingestOrderWebhook(
     if (isDuplicateWebhookError(error)) {
       return { duplicate: true };
     }
+    if (options.reserveStock && isStockGuardFailure(error)) throw new InsufficientStockError();
     throw error;
   }
 

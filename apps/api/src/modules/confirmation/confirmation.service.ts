@@ -33,6 +33,13 @@ export class ConfirmationOrderNotFoundError extends Error {
   }
 }
 
+export class ConfirmationConflictError extends Error {
+  constructor() {
+    super('Order changed during confirmation; reload before retrying');
+    this.name = 'ConfirmationConflictError';
+  }
+}
+
 export async function performConfirmationAction(
   database: D1Database,
   input: PerformConfirmationActionInput,
@@ -86,45 +93,62 @@ export async function performConfirmationAction(
     },
   );
 
-  await database.batch([
-    database
-      .prepare(
-        `UPDATE orders
-         SET status = ?,
+  try {
+    await database.batch([
+      database
+        .prepare(
+          `UPDATE orders
+         SET status = CASE WHEN status = ? AND
+           (SELECT COUNT(*) FROM confirmation_attempts
+            WHERE store_id = ? AND order_id = ? AND outcome = 'no_answer') = ?
+           THEN ? ELSE NULL END,
              confirmed_at = CASE WHEN ? = 'CONFIRMED' THEN ? ELSE confirmed_at END,
              closed_at = CASE WHEN ? = 'CANCELLED' THEN ? ELSE closed_at END,
              updated_at = ?
          WHERE id = ? AND store_id = ?`,
-      )
-      .bind(
-        result.next.status,
-        result.next.status,
-        timestamp,
-        result.next.status,
-        timestamp,
-        timestamp,
-        order.id,
-        STORE_ID,
-      ),
-    buildAttemptStatement(database, input, attemptedBy, timestamp),
-    database
-      .prepare(
-        `INSERT INTO order_events
+        )
+        .bind(
+          currentStatus,
+          STORE_ID,
+          order.id,
+          noAnswerAttempts,
+          result.next.status,
+          result.next.status,
+          timestamp,
+          result.next.status,
+          timestamp,
+          timestamp,
+          order.id,
+          STORE_ID,
+        ),
+      buildAttemptStatement(database, input, attemptedBy, timestamp),
+      database
+        .prepare(
+          `INSERT INTO order_events
           (id, store_id, order_id, from_status, to_status, actor, reason, payload_json, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(
-        createUuidV7(now.getTime()),
-        STORE_ID,
-        order.id,
-        result.event.fromStatus,
-        result.event.toStatus,
-        result.event.actor,
-        result.event.reason ?? null,
-        JSON.stringify(result.event.payload ?? {}),
-        timestamp,
-      ),
-  ]);
+        )
+        .bind(
+          createUuidV7(now.getTime()),
+          STORE_ID,
+          order.id,
+          result.event.fromStatus,
+          result.event.toStatus,
+          result.event.actor,
+          result.event.reason ?? null,
+          JSON.stringify(result.event.payload ?? {}),
+          timestamp,
+        ),
+    ]);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('NOT NULL constraint failed: orders.status')
+    ) {
+      throw new ConfirmationConflictError();
+    }
+    throw error;
+  }
 
   return { status: result.next.status };
 }

@@ -4,7 +4,11 @@ import type { Context, Hono } from 'hono';
 
 import type { AppEnvironment } from '../../auth/cloudflareAccess';
 import { confirmationActionSchema, confirmationOrderIdSchema } from './confirmation.schema';
-import { ConfirmationOrderNotFoundError, performConfirmationAction } from './confirmation.service';
+import {
+  ConfirmationConflictError,
+  ConfirmationOrderNotFoundError,
+  performConfirmationAction,
+} from './confirmation.service';
 
 export function registerConfirmationRoutes(app: Hono<AppEnvironment>): void {
   app.post('/admin/orders/:orderId/confirmation', async (context) => {
@@ -53,6 +57,14 @@ export function registerConfirmationRoutes(app: Hono<AppEnvironment>): void {
       });
       return context.redirect('/admin/orders', 303);
     } catch (error) {
+      if (error instanceof ConfirmationConflictError) {
+        return confirmationError(
+          context,
+          409,
+          'confirmation_conflict',
+          'La commande a changé. Actualisez avant de réessayer.',
+        );
+      }
       if (error instanceof ConfirmationOrderNotFoundError) {
         return confirmationError(context, 404, 'order_not_found', 'Commande introuvable.');
       }
