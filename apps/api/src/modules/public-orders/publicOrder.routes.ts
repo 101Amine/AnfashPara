@@ -2,6 +2,7 @@
 import type { Context, Hono } from 'hono';
 
 import type { AppEnvironment } from '../../auth/cloudflareAccess';
+import { InsufficientStockError } from '../inventory/stockReservation.service';
 import { publicOrderRateLimiter, type OrderRateLimiter } from './publicOrder.rateLimit';
 import { publicOrderSchema } from './publicOrder.schema';
 import {
@@ -84,9 +85,20 @@ export function registerPublicOrderRoutes(
     }
 
     try {
-      const result = await createPublicOrder(context.env.DB, idempotencyKey, parsedPayload.data);
+      const result = await createPublicOrder(
+        context.env.DB,
+        idempotencyKey,
+        parsedPayload.data,
+        new Date(),
+        {
+          reserveStock: context.env.STOCK_RESERVATIONS_ENABLED === 'true',
+        },
+      );
       return context.json(result, result.duplicate ? 200 : 201);
     } catch (error) {
+      if (error instanceof InsufficientStockError) {
+        return context.json({ error: { code: 'insufficient_stock', message: error.message } }, 409);
+      }
       if (error instanceof IdempotencyConflictError) {
         return context.json(
           { error: { code: 'idempotency_conflict', message: error.message } },

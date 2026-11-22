@@ -1,5 +1,6 @@
 -- apps/api/scripts/reset-local.sql
 PRAGMA foreign_keys = OFF;
+DROP TABLE IF EXISTS stock_reservations;
 DROP TABLE IF EXISTS settlement_lines;
 DROP TABLE IF EXISTS courier_settlements;
 DROP TABLE IF EXISTS shipment_events;

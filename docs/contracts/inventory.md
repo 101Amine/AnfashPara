@@ -1,5 +1,12 @@
 # Inventory movement ledger
 
+The [W4-02 stock reservation decision](stock-reservations.md) defines the planned
+physical/reserved/available model and manual-release policy. Storage and transactional
+checkout acquisition are implemented locally behind a disabled server flag. Migration
+0009 closes existing holds atomically from cancellation/shipment events, independently
+of that flag. Legacy reconciliation and staging verification remain prerequisites to
+activation; the ledger behavior below describes the current runtime.
+
 Inventory is append-only. There is no mutable `stock` column and no workflow may overwrite a stock
 number. The current quantity for a SKU is always derived from the ledger:
 

@@ -14,6 +14,7 @@ export type AppBindings = Omit<ApiBindings, 'COURIER_MODE' | 'COURIER_NAME'> & {
   COURIER_NAME?: string;
   COURIER_WEBHOOK_SECRET?: string;
   ORDER_WEBHOOK_SECRET?: string;
+  STOCK_RESERVATIONS_ENABLED?: string;
 };
 
 export type AccessIdentity = {

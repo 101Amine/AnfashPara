@@ -5,6 +5,7 @@ import {
   OrderIngestionValidationError,
 } from '../order-ingestion/orderWebhook.service';
 import type { PublicOrderPayload } from './publicOrder.schema';
+import type { ReservationOptions } from '../inventory/stockReservation.service';
 
 const STORE_ID = 'para-main';
 const SOURCE = 'public-api';
@@ -40,6 +41,7 @@ export async function createPublicOrder(
   idempotencyKey: string,
   payload: PublicOrderPayload,
   now = new Date(),
+  options: ReservationOptions = {},
 ): Promise<PublicOrderResult> {
   const canonicalPayload = JSON.stringify(payload);
   const keyHash = await sha256(idempotencyKey);
@@ -71,6 +73,7 @@ export async function createPublicOrder(
     ingestionPayload,
     now,
     SOURCE,
+    options,
   );
 
   if (!ingestionResult.duplicate) {

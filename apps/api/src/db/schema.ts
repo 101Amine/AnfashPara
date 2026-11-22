@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 import {
   check,
+  foreignKey,
   index,
   integer,
   primaryKey,
@@ -213,6 +214,7 @@ export const orders = sqliteTable(
   },
   (table) => [
     uniqueIndex('orders_store_external_unique').on(table.storeId, table.externalId),
+    uniqueIndex('orders_store_id_unique').on(table.storeId, table.id),
     uniqueIndex('orders_store_number_unique').on(table.storeId, table.orderNumber),
     index('orders_store_status_placed_index').on(table.storeId, table.status, table.placedAt),
     index('orders_customer_placed_index').on(table.customerId, table.placedAt),
@@ -242,6 +244,64 @@ export const orders = sqliteTable(
     check('orders_raw_payload_json', jsonCheck(table.rawPayloadJson)),
     check('orders_created_at_iso', isoDateCheck(table.createdAt)),
     check('orders_updated_at_iso', isoDateCheck(table.updatedAt)),
+  ],
+);
+
+export const RESERVATION_STATUSES = ['active', 'released', 'consumed'] as const;
+
+// Acquisition is immutable; migration 0008 adds lifecycle/history triggers.
+// These records do not affect checkout until the shared ingestion service uses them.
+export const stockReservations = sqliteTable(
+  'stock_reservations',
+  {
+    id: text('id').primaryKey(),
+    storeId: text('store_id').notNull(),
+    orderId: text('order_id').notNull(),
+    sku: text('sku').notNull(),
+    quantity: integer('quantity').notNull(),
+    status: text('status', { enum: RESERVATION_STATUSES }).notNull().default('active'),
+    createdAt: text('created_at').notNull(),
+    createdBy: text('created_by').notNull(),
+    closedAt: text('closed_at'),
+    closedBy: text('closed_by'),
+    closeReason: text('close_reason'),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.storeId, table.orderId],
+      foreignColumns: [orders.storeId, orders.id],
+    }),
+    foreignKey({
+      columns: [table.storeId, table.sku],
+      foreignColumns: [products.storeId, products.sku],
+    }),
+    uniqueIndex('stock_reservations_order_sku_unique').on(table.storeId, table.orderId, table.sku),
+    index('stock_reservations_available_index').on(table.storeId, table.sku, table.status),
+    index('stock_reservations_review_index').on(
+      table.storeId,
+      table.status,
+      table.createdAt,
+      table.id,
+    ),
+    check('stock_reservations_id_uuid_v7', uuidV7Check(table.id)),
+    check('stock_reservations_quantity_valid', positiveIntegerCheck(table.quantity)),
+    check(
+      'stock_reservations_status_valid',
+      sql`${table.status} IN ('active', 'released', 'consumed')`,
+    ),
+    check('stock_reservations_created_at_iso', isoDateCheck(table.createdAt)),
+    check('stock_reservations_created_by_required', sql`length(trim(${table.createdBy})) > 0`),
+    check(
+      'stock_reservations_closure_valid',
+      sql`
+      (${table.status} = 'active' AND ${table.closedAt} IS NULL AND ${table.closedBy} IS NULL AND ${table.closeReason} IS NULL)
+      OR (${table.status} IN ('released', 'consumed')
+        AND ${table.closedAt} IS NOT NULL AND ${isoDateCheck(table.closedAt)}
+        AND ${table.closedAt} >= ${table.createdAt}
+        AND ${table.closedBy} IS NOT NULL AND length(trim(${table.closedBy})) > 0
+        AND ${table.closeReason} IS NOT NULL AND length(trim(${table.closeReason})) > 0)
+    `,
+    ),
   ],
 );
 

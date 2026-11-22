@@ -23,6 +23,7 @@ import { registerReconciliationRoutes } from './modules/settlements/reconciliati
 import { registerOutboxRoutes } from './modules/outbox/outbox.routes';
 import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes';
 import { registerInventoryOperationsRoutes } from './modules/inventory/inventoryOperations.routes';
+import { registerReservationReviewRoutes } from './modules/inventory/reservationReview.routes';
 import { registerStagingLifecycleRoutes } from './modules/testing/stagingLifecycle.routes';
 import {
   processOutbox,
@@ -70,6 +71,7 @@ export const createApp = (
   registerOutboxRoutes(app);
   registerDashboardRoutes(app);
   registerInventoryOperationsRoutes(app);
+  registerReservationReviewRoutes(app);
   registerStagingLifecycleRoutes(app);
   registerManualShipmentRoutes(app);
 

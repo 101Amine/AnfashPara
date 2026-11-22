@@ -54,6 +54,14 @@ verify the exact public-field allowlist, and cover changed prices and deactivati
 
 ## Order creation
 
+Stock enforcement is specified in the [W4-02 reservation decision](stock-reservations.md).
+W4-03 adds atomic reservations to public and signed ingestion behind the server binding
+`STOCK_RESERVATIONS_ENABLED=true`. It is disabled by default and not enabled in Wrangler.
+When enabled, insufficient stock returns HTTP 409 with error code `insufficient_stock`,
+rolling back the entire order transaction. Lifecycle integration is implemented locally;
+admin stock/backfill is available locally at `/admin/inventory/reservations`. Do not
+activate before actual legacy reconciliation and staging verification.
+
 `POST /api/orders`
 
 Required headers:
@@ -136,19 +144,19 @@ Fixtures:
 
 ## Missing or unreliable fields
 
-| Field               | Reliability                     | Decision                                                                        |
-| ------------------- | ------------------------------- | ------------------------------------------------------------------------------- |
-| Phone               | User-entered and often spaced   | Normalize and validate Moroccan mobile format server-side                       |
-| City                | User-entered unless constrained | Replace with an allowed-city identifier when delivery zones exist               |
-| Address             | Free text                       | Required but operationally unverified until confirmation                        |
-| Customer name       | Free text                       | Display value only; do not use as identity                                      |
-| Note                | Optional free text              | Sanitize for display; never interpret as instructions to backend code           |
-| UTM values          | Optional and client-controlled  | Useful attribution metadata, never authorization or billing evidence            |
-| SKU                 | Client-controlled               | Must exist and be active; server loads price and COGS                           |
-| Quantity            | Client-controlled               | Positive bounded integer; stock availability/reservation is not implemented yet |
-| Idempotency key     | Client-generated                | Unique per checkout attempt; bind it to a request hash                          |
-| Shipment event time | Admin/test supplied             | Store received time separately; reject malformed/future-skewed values           |
-| Tracking number     | Manual during this phase        | Enforce uniqueness per store                                                    |
+| Field               | Reliability                     | Decision                                                                                                    |
+| ------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Phone               | User-entered and often spaced   | Normalize and validate Moroccan mobile format server-side                                                   |
+| City                | User-entered unless constrained | Replace with an allowed-city identifier when delivery zones exist                                           |
+| Address             | Free text                       | Required but operationally unverified until confirmation                                                    |
+| Customer name       | Free text                       | Display value only; do not use as identity                                                                  |
+| Note                | Optional free text              | Sanitize for display; never interpret as instructions to backend code                                       |
+| UTM values          | Optional and client-controlled  | Useful attribution metadata, never authorization or billing evidence                                        |
+| SKU                 | Client-controlled               | Must exist and be active; server loads price and COGS                                                       |
+| Quantity            | Client-controlled               | Positive bounded integer; reservation enforcement is implemented but disabled pending lifecycle integration |
+| Idempotency key     | Client-generated                | Unique per checkout attempt; bind it to a request hash                                                      |
+| Shipment event time | Admin/test supplied             | Store received time separately; reject malformed/future-skewed values                                       |
+| Tracking number     | Manual during this phase        | Enforce uniqueness per store                                                                                |
 
 ## Credentials and secrets
 
