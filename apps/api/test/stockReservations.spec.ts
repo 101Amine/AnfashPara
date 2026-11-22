@@ -159,7 +159,7 @@ describe('atomic checkout reservations', () => {
     await stock(2);
     const response = await checkout('success-key');
     expect(response.status).toBe(201);
-    expect(await response.json()).toMatchObject({ codAmountCentimes: 100, status: 'CONFIRMING' });
+    expect(await response.json()).toMatchObject({ codAmountCentimes: 2100, status: 'CONFIRMING' });
     expect(await readStockAvailability(env.DB, 'para-main', 'SKU-1')).toEqual({
       physical: 2,
       reserved: 1,

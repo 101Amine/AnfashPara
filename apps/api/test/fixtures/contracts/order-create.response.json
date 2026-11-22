@@ -3,6 +3,8 @@
   "orderId": "0199a001-1000-7000-8000-000000000001",
   "orderNumber": "PARA-63CDA17FA3E2B740",
   "status": "CONFIRMING",
-  "codAmountCentimes": 28700,
+  "codAmountCentimes": 30700,
+  "itemsSubtotalCentimes": 28700,
+  "shippingFeeCustomerCentimes": 2000,
   "currency": "MAD"
 }

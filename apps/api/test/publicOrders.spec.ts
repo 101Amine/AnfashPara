@@ -36,6 +36,82 @@ beforeEach(async () => {
 });
 
 describe('POST /api/orders', () => {
+  it('publishes the customer delivery contract without courier costs', async () => {
+    const response = await worker.fetch(
+      new Request('https://example.com/api/delivery-zones'),
+      { ...env },
+      createExecutionContext(),
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('public, max-age=60');
+    expect(await response.json()).toEqual({
+      currency: 'MAD',
+      policyVersion: '2026-11-22',
+      freeDeliveryThresholdCentimes: null,
+      zones: [
+        { id: 'rabat', city: 'Rabat', feeCentimes: 2000 },
+        { id: 'sale', city: 'Salé', feeCentimes: 2000 },
+        { id: 'temara', city: 'Témara', feeCentimes: 2500 },
+      ],
+    });
+  });
+
+  it.each([
+    ['sale', 'Salé', 2000],
+    ['TÉMARA', 'Témara', 2500],
+  ] as const)('freezes the server delivery charge for %s', async (city, canonical, fee) => {
+    const response = await postOrder(
+      { ...payload, customer: { ...payload.customer, city } },
+      'delivery-city-001',
+    );
+    expect(response.status).toBe(201);
+    expect(response.headers.get('cache-control')).toBe('private, no-store, max-age=0');
+    expect(await response.json()).toMatchObject({
+      itemsSubtotalCentimes: 28700,
+      shippingFeeCustomerCentimes: fee,
+      codAmountCentimes: 28700 + fee,
+    });
+    expect(
+      await env.DB.prepare(
+        'SELECT city, shipping_fee_customer_centimes AS fee FROM orders',
+      ).first(),
+    ).toEqual({ city: canonical, fee });
+  });
+
+  it('rejects an unsupported area and a forged fee without any writes', async () => {
+    const outside = await postOrder(
+      { ...payload, customer: { ...payload.customer, city: 'Casablanca' } },
+      'outside-zone-001',
+    );
+    expect(outside.status).toBe(422);
+    expect(await outside.json()).toMatchObject({ error: { code: 'unsupported_delivery_zone' } });
+    const forged = await postOrder(
+      { ...payload, shippingFeeCustomerCentimes: 0 },
+      'forged-fee-001',
+    );
+    expect(forged.status).toBe(400);
+    for (const table of ['orders', 'order_items', 'customers', 'webhook_inbox', 'outbox'])
+      await expect(rowCount(env.DB, table)).resolves.toBe(0);
+  });
+
+  it('replays a historical receipt using its frozen fee instead of the current policy', async () => {
+    const first = await postOrder(payload, 'historical-fee-001');
+    expect(first.status).toBe(201);
+    await env.DB.prepare(
+      'UPDATE orders SET shipping_fee_customer_centimes=0,cod_amount_centimes=28700',
+    ).run();
+    await env.DB.prepare('UPDATE products SET price_centimes=1').run();
+    const replay = await postOrder(payload, 'historical-fee-001');
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toMatchObject({
+      duplicate: true,
+      codAmountCentimes: 28700,
+      itemsSubtotalCentimes: 28700,
+      shippingFeeCustomerCentimes: 0,
+    });
+    await expect(rowCount(env.DB, 'orders')).resolves.toBe(1);
+  });
+
   async function catalogue() {
     const response = await worker.fetch(
       new Request('https://example.com/api/products'),
@@ -68,7 +144,7 @@ describe('POST /api/orders', () => {
       status: string;
     }>();
     expect(receipt.codAmountCentimes).toBe(
-      products.reduce((total, product) => total + product.priceCentimes, 0),
+      products.reduce((total, product) => total + product.priceCentimes, 0) + 2000,
     );
     expect(receipt.status).toBe('CONFIRMING');
     const stored = await env.DB.prepare(
@@ -91,7 +167,7 @@ describe('POST /api/orders', () => {
     );
     expect(response.status).toBe(201);
     const receipt = await response.json<{ codAmountCentimes: number }>();
-    expect(receipt.codAmountCentimes).toBe(product.priceCentimes + 100);
+    expect(receipt.codAmountCentimes).toBe(product.priceCentimes + 100 + 2000);
   });
 
   it('rejects a previously listed SKU if the product becomes inactive before checkout', async () => {
@@ -160,7 +236,9 @@ describe('POST /api/orders', () => {
       status: string;
     }>();
     expect(body).toMatchObject({
-      codAmountCentimes: 28_700,
+      codAmountCentimes: 30_700,
+      itemsSubtotalCentimes: 28_700,
+      shippingFeeCustomerCentimes: 2000,
       currency: 'MAD',
       duplicate: false,
       status: 'CONFIRMING',
@@ -174,8 +252,8 @@ describe('POST /api/orders', () => {
       .bind(body.orderId)
       .first();
     expect(order).toEqual({
-      cod_amount_centimes: 28_700,
-      shipping_fee_customer_centimes: 0,
+      cod_amount_centimes: 30_700,
+      shipping_fee_customer_centimes: 2000,
       status: 'CONFIRMING',
     });
 
