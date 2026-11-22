@@ -85,7 +85,8 @@ export async function listAdminOrders(
          COALESCE(
            (SELECT MAX(oe.created_at)
               FROM order_events oe
-             WHERE oe.order_id = o.id AND oe.to_status = o.status),
+             WHERE oe.order_id = o.id AND oe.to_status = o.status
+               AND oe.from_status IS NOT oe.to_status),
            o.updated_at
          ) AS status_started_at
        FROM orders o

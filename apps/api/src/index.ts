@@ -12,6 +12,7 @@ import {
 } from './integrations/courier/courierClient.factory';
 import { registerAdminOrdersRoutes } from './modules/admin-orders/adminOrders.routes';
 import { registerConfirmationRoutes } from './modules/confirmation/confirmation.routes';
+import { registerManualMessageRoutes } from './modules/confirmation/manualMessages.routes';
 import { registerLabelRoutes } from './modules/labels/labels.routes';
 import type { LabelFetcher } from './modules/labels/labels.service';
 import { registerOrderWebhookRoutes } from './modules/order-ingestion/orderWebhook.routes';
@@ -60,6 +61,7 @@ export const createApp = (
 
   registerAdminOrdersRoutes(app);
   registerConfirmationRoutes(app);
+  registerManualMessageRoutes(app);
   registerLabelRoutes(app, labelFetcher);
   registerParcelRoutes(app, courierClientFactory);
   registerManualFeesRoutes(app);

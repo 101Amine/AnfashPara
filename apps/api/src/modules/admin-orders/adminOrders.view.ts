@@ -484,10 +484,17 @@ function renderOrderActions(
 ): HtmlEscapedString | Promise<HtmlEscapedString> | string {
   const endpoint = `/admin/orders/${order.id}/confirmation`;
   const hasConfirmationActions = order.status === 'CONFIRMING' || order.status === 'NO_ANSWER';
-  if (order.status !== 'CONFIRMED' && !hasConfirmationActions && order.shipmentId === null)
+  const hasMessage = ['CONFIRMING', 'NO_ANSWER', 'SHIPPED', 'CANCELLED'].includes(order.status);
+  if (
+    order.status !== 'CONFIRMED' &&
+    !hasConfirmationActions &&
+    order.shipmentId === null &&
+    !hasMessage
+  )
     return '';
 
   return html`<div class="actions" aria-label="Actions de la commande">
+    ${hasMessage ? html`<a class="action" href=${`/admin/orders/${order.id}/messages`}>Messages WhatsApp et suivi</a>` : ''}
     ${
       order.status === 'CONFIRMED'
         ? html`<form method="post" action="${`/admin/orders/${order.id}/parcel`}">
