@@ -1,6 +1,6 @@
 // apps/api/test/publicOrders.spec.ts
 import { createExecutionContext, env } from 'cloudflare:test';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AppBindings } from '../src/auth/cloudflareAccess';
 import worker from '../src/index';
@@ -36,6 +36,81 @@ beforeEach(async () => {
 });
 
 describe('POST /api/orders', () => {
+  it('uses the edge limiter before parsing and returns a private retryable rejection without writes', async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    const response = await worker.fetch(
+      new Request('https://example.com/api/orders', {
+        method: 'POST',
+        body: 'not json',
+        headers: {
+          'CF-Connecting-IP': '198.51.100.22',
+          'X-Forwarded-For': 'attacker-chosen',
+        },
+      }),
+      { ...env, ENVIRONMENT: 'staging', ORDER_RATE_LIMITER: { limit } },
+      createExecutionContext(),
+    );
+    expect(limit).toHaveBeenCalledWith({ key: 'checkout:198.51.100.22' });
+    expect(response.status).toBe(429);
+    expect(response.headers.get('retry-after')).toBe('60');
+    expect(response.headers.get('cache-control')).toContain('no-store');
+    expect(await response.json()).toMatchObject({ error: { code: 'rate_limit_exceeded' } });
+    for (const table of ['orders', 'customers', 'order_events', 'webhook_inbox', 'outbox'])
+      await expect(rowCount(env.DB, table)).resolves.toBe(0);
+  });
+
+  it.each(['missing-binding', 'binding-error', 'missing-ip'] as const)(
+    'fails closed on %s in staging',
+    async (failure) => {
+      const limit = vi.fn().mockRejectedValue(new Error('private provider error'));
+      const response = await worker.fetch(
+        new Request('https://example.com/api/orders', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: {
+            ...(failure !== 'missing-ip' ? { 'CF-Connecting-IP': '198.51.100.22' } : {}),
+            'Content-Type': 'application/json',
+            'Idempotency-Key': 'protected-order-001',
+          },
+        }),
+        {
+          ...env,
+          ENVIRONMENT: 'staging',
+          ORDER_RATE_LIMITER: failure === 'missing-binding' ? undefined : { limit },
+        },
+        createExecutionContext(),
+      );
+      expect(response.status).toBe(503);
+      expect(await response.text()).not.toContain('private provider error');
+      await expect(rowCount(env.DB, 'orders')).resolves.toBe(0);
+      if (failure === 'missing-ip') expect(limit).not.toHaveBeenCalled();
+    },
+  );
+
+  it('preserves checkout and idempotent receipts when the edge limiter allows requests', async () => {
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const request = () =>
+      worker.fetch(
+        new Request('https://example.com/api/orders', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+          headers: {
+            'CF-Connecting-IP': '198.51.100.23',
+            'Content-Type': 'application/json',
+            'Idempotency-Key': 'protected-replay-001',
+          },
+        }),
+        { ...env, ENVIRONMENT: 'staging', ORDER_RATE_LIMITER: { limit } },
+        createExecutionContext(),
+      );
+    expect((await request()).status).toBe(201);
+    const replay = await request();
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toMatchObject({ duplicate: true });
+    expect(limit).toHaveBeenCalledTimes(2);
+    await expect(rowCount(env.DB, 'orders')).resolves.toBe(1);
+  });
+
   it('publishes the customer delivery contract without courier costs', async () => {
     const response = await worker.fetch(
       new Request('https://example.com/api/delivery-zones'),

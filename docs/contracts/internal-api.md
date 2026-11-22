@@ -71,8 +71,11 @@ Required headers:
 
 There is no signature header. A signing secret embedded in browser JavaScript would be public and
 would provide no authentication. The implemented boundary instead uses strict Zod validation, a
-16 KiB body limit, a per-IP burst limit and server-side price lookup. The in-Worker burst limiter is
-best-effort per Worker isolate; add a Cloudflare edge rate-limit rule before a larger public launch.
+16 KiB body limit, a per-IP burst limit and server-side price lookup. Staging configures a Cloudflare
+Rate Limiting binding (10 attempts/60 seconds per IP, shared within a location, eventually consistent).
+Only local development uses the in-memory fallback. Deployed environments fail closed if the binding
+is missing or fails. See [checkout abuse protection](checkout-abuse-protection.md) for retry behavior,
+limits and production configuration requirements.
 
 The request contains:
 
