@@ -47,6 +47,7 @@ const resetDatabase = async (): Promise<void> => {
     `CREATE TABLE order_events (
       id TEXT PRIMARY KEY NOT NULL,
       order_id TEXT NOT NULL,
+      from_status TEXT,
       to_status TEXT NOT NULL,
       created_at TEXT NOT NULL
     )`,
@@ -89,7 +90,9 @@ const resetDatabase = async (): Promise<void> => {
         placedAt,
         placedAt,
       ),
-      env.DB.prepare('INSERT INTO order_events VALUES (?, ?, ?, ?)').bind(
+      env.DB.prepare(
+        'INSERT INTO order_events (id, order_id, to_status, created_at) VALUES (?, ?, ?, ?)',
+      ).bind(
         `event-${suffix}`,
         orderId,
         status,

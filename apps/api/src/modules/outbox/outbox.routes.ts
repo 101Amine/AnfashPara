@@ -79,7 +79,9 @@ export function registerOutboxRoutes(app: Hono<AppEnvironment>): void {
                   <h1>Tâches différées</h1>
                   <p>
                     25 dernières tâches non terminées. Aucun envoi réel n’est configuré : le cron
-                    conserve les tâches sans les consommer.
+                    conserve les tâches sans les consommer. Les messages WhatsApp manuels sont
+                    suivis depuis la commande ; une déclaration d’envoi ne termine pas
+                    automatiquement ces tâches.
                   </p>
                   <p>
                     Les erreurs arrêtées demandent une vérification. Aucune relance automatique
