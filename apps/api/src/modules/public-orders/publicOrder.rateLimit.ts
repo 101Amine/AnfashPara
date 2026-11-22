@@ -1,4 +1,24 @@
 // apps/api/src/modules/public-orders/publicOrder.rateLimit.ts
+import type { AppBindings } from '../../auth/cloudflareAccess';
+
+// Cloudflare supplies the client IP at the edge. Never use X-Forwarded-For or a body field.
+export async function consumeOrderRateLimit(
+  bindings: Pick<AppBindings, 'ORDER_RATE_LIMITER' | 'ENVIRONMENT'>,
+  clientIp: string | undefined,
+  localLimiter: OrderRateLimiter,
+): Promise<RateLimitResult> {
+  if (bindings.ORDER_RATE_LIMITER) {
+    if (!clientIp?.trim()) throw new Error('Client address unavailable');
+    const { success } = await bindings.ORDER_RATE_LIMITER.limit({
+      key: `checkout:${clientIp.trim()}`,
+    });
+    return success ? { allowed: true } : { allowed: false, retryAfterSeconds: 60 };
+  }
+  // Explicit local development only: never silently weaken a deployed environment.
+  if (bindings.ENVIRONMENT !== 'local') throw new Error('Checkout rate limiter unavailable');
+  return localLimiter.consume(clientIp ?? 'unknown');
+}
+
 export type RateLimitResult = { allowed: true } | { allowed: false; retryAfterSeconds: number };
 
 export type OrderRateLimiter = {

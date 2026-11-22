@@ -4,7 +4,11 @@ import { DELIVERY_POLICY_VERSION, DELIVERY_ZONES, UnsupportedDeliveryZoneError }
 
 import type { AppEnvironment } from '../../auth/cloudflareAccess';
 import { InsufficientStockError } from '../inventory/stockReservation.service';
-import { publicOrderRateLimiter, type OrderRateLimiter } from './publicOrder.rateLimit';
+import {
+  consumeOrderRateLimit,
+  publicOrderRateLimiter,
+  type OrderRateLimiter,
+} from './publicOrder.rateLimit';
 import { publicOrderSchema } from './publicOrder.schema';
 import {
   createPublicOrder,
@@ -32,7 +36,16 @@ export function registerPublicOrderRoutes(
     context.header('Cache-Control', 'private, no-store, max-age=0');
     if (!context.env.DB) return serviceUnavailable(context);
 
-    const rateLimit = rateLimiter.consume(context.req.header('CF-Connecting-IP') ?? 'unknown');
+    let rateLimit;
+    try {
+      rateLimit = await consumeOrderRateLimit(
+        context.env,
+        context.req.header('CF-Connecting-IP'),
+        rateLimiter,
+      );
+    } catch {
+      return serviceUnavailable(context);
+    }
     if (!rateLimit.allowed) {
       context.header('Retry-After', String(rateLimit.retryAfterSeconds));
       return context.json(
