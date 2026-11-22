@@ -275,6 +275,15 @@ resolve shortages/partial records, review and backfill valid legacy orders, rech
 balances, and run staging lifecycle tests before enabling acquisition. These local
 changes do not apply any backfill or configuration to staging or production.
 
+The manually dispatched `Staging stock audit` GitHub workflow runs only on `main`
+and shares the staging deployment concurrency group. It executes the read-only
+`apps/api/scripts/audit-reservations.sql` query with staging credentials. Logs contain
+aggregate readiness counts, never customer details or individual order identifiers.
+The report includes missing or mismatched holds, empty orders, current/projected
+stock shortages, stranded holds and open orders marked as staging lifecycle fixtures.
+Synthetic markers are a review aid, not permission to cancel or reserve those orders.
+The audit does not backfill reservations or enable acquisition.
+
 Automatic expiry, post-confirmation cancellation and damaged-return quarantine remain
 separate future decisions. W4-02 is complete when these policy rules and examples are
 reviewable; it is not evidence that overselling protection is already deployed.

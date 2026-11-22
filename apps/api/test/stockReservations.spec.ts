@@ -2,6 +2,7 @@ import { env } from 'cloudflare:test';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { readStockAvailability } from '../src/modules/inventory/stockAvailability.service';
 import resetSql from '../scripts/reset-local.sql?raw';
+import auditSql from '../scripts/audit-reservations.sql?raw';
 import { Hono } from 'hono';
 import { createApp } from '../src/index';
 import {
@@ -501,6 +502,26 @@ describe('atomic checkout reservations', () => {
 });
 
 describe('reservation reconciliation', () => {
+  it('audits readiness without exposing orders or changing data', async () => {
+    const audit = await env.DB.prepare(auditSql).first();
+    expect(audit).toEqual({
+      open_orders: 1,
+      orders_needing_review: 0,
+      open_orders_without_items: 1,
+      current_shortfall_skus: 0,
+      projected_shortfall_skus: 0,
+      stranded_active_holds: 0,
+      mismatched_active_holds: 0,
+      open_synthetic_marked_orders: 0,
+    });
+    await hold().run();
+    expect(await env.DB.prepare(auditSql).first()).toMatchObject({
+      current_shortfall_skus: 1,
+      projected_shortfall_skus: 1,
+      mismatched_active_holds: 1,
+    });
+    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM stock_reservations').first('n')).toBe(1);
+  });
   async function legacy(quantity = 2) {
     await env.DB.prepare(
       `INSERT INTO order_items(id,store_id,order_id,sku,quantity,unit_price_centimes,unit_cogs_centimes,created_at)
