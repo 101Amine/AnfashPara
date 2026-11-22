@@ -22,7 +22,12 @@ export function registerStagingLifecycleRoutes(app: Hono<AppEnvironment>): void 
     if (!c.env.DB) return c.json({ error: 'Database unavailable' }, 503);
     const run = c.req.query('run');
     if (run === undefined)
-      return c.json({ environment: 'staging', gitSha: c.env.GIT_SHA, mode: 'manual' });
+      return c.json({
+        environment: 'staging',
+        gitSha: c.env.GIT_SHA,
+        mode: 'manual',
+        reservationsEnabled: c.env.STOCK_RESERVATIONS_ENABLED === 'true',
+      });
     const parsed = runSchema.safeParse(run);
     if (!parsed.success) return c.json({ error: 'Invalid run' }, 400);
     try {
@@ -48,6 +53,14 @@ export function registerStagingLifecycleRoutes(app: Hono<AppEnvironment>): void 
     try {
       const rows = await report(c.env.DB, input.data.run);
       if (rows.length !== 5) return c.json({ error: 'Incomplete run; preserve evidence' }, 409);
+      if (
+        rows.some(
+          (row) =>
+            row.activeReservations !== 0 ||
+            !['DELIVERED', 'RETURNED', 'CANCELLED', 'SETTLED'].includes(String(row.status)),
+        )
+      )
+        return c.json({ error: 'Unfinished run; preserve evidence' }, 409);
       // Archive only explicitly tagged synthetic orders. Never delete audit evidence.
       const prefix = `STG-${input.data.run}-`;
       const timestamp = new Date().toISOString();
@@ -103,6 +116,11 @@ async function report(database: D1Database, run: string) {
     await database
       .prepare(
         `SELECT o.id,o.order_number AS orderNumber,o.status,
+    (SELECT COUNT(*) FROM stock_reservations r WHERE r.store_id=o.store_id AND r.order_id=o.id) AS reservations,
+    (SELECT COALESCE(SUM(quantity),0) FROM stock_reservations r WHERE r.store_id=o.store_id AND r.order_id=o.id AND r.status='active') AS activeReservations,
+    (SELECT COALESCE(SUM(quantity),0) FROM stock_reservations r WHERE r.store_id=o.store_id AND r.order_id=o.id AND r.status='released') AS releasedReservations,
+    (SELECT COALESCE(SUM(quantity),0) FROM stock_reservations r WHERE r.store_id=o.store_id AND r.order_id=o.id AND r.status='consumed') AS consumedReservations,
+    (SELECT COALESCE(SUM(quantity),0) FROM inventory_movements m WHERE m.store_id=o.store_id AND m.reference IN ('order:'||o.id||':shipped','order:'||o.id||':returned')) AS inventoryDelta,
     (SELECT c.orders_count FROM customers c WHERE c.id=o.customer_id AND c.store_id=o.store_id) AS customerOrders,
     (SELECT c.delivered_count FROM customers c WHERE c.id=o.customer_id AND c.store_id=o.store_id) AS customerDelivered,
     (SELECT c.refused_count FROM customers c WHERE c.id=o.customer_id AND c.store_id=o.store_id) AS customerRefused,

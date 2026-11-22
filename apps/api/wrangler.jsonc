@@ -39,6 +39,7 @@
         "COURIER_MODE": "manual",
         "COURIER_NAME": "self-delivery",
         "ENVIRONMENT": "staging",
+        "STOCK_RESERVATIONS_ENABLED": "true",
         "GIT_SHA": "uncommitted",
       },
       "triggers": {

@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: staging-lifecycle
+  group: deploy-staging
   cancel-in-progress: false
 jobs:
   rehearse:
