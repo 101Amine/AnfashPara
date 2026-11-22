@@ -99,7 +99,9 @@ For a first request the API returns HTTP `201`:
   "orderId": "0199a001-1000-7000-8000-000000000001",
   "orderNumber": "PARA-63CDA17FA3E2B740",
   "status": "CONFIRMING",
-  "codAmountCentimes": 28700,
+  "codAmountCentimes": 30700,
+  "itemsSubtotalCentimes": 28700,
+  "shippingFeeCustomerCentimes": 2000,
   "currency": "MAD"
 }
 ```
@@ -109,8 +111,14 @@ D1 batch. That transaction writes the idempotency inbox row, customer upsert, or
 items, `NEW → CONFIRMING` event and confirmation outbox row. A unique inbox constraint resolves two
 concurrent deliveries safely: one wins, the other loads and returns the committed result.
 
-Shipping is currently `0` because no first-party delivery-zone pricing rule exists yet. It is
-assigned by the server and is never accepted from the browser.
+Shipping is assigned by the server and is never accepted from the browser. Fetch
+`GET /api/delivery-zones` for the allowed cities and customer fees. Rabat and Salé cost
+2,000 centimes; Témara costs 2,500. There is no free-delivery threshold. Submit the
+zone `id` or its canonical `city` in `customer.city`; accents/case/outer whitespace
+are normalized, and other cities return 422 `unsupported_delivery_zone` without writes.
+The order freezes its fee in D1; idempotent replays return that saved fee and total,
+including historical orders created under the former zero-fee policy.
+All order responses use `private, no-store, max-age=0`.
 
 Fixtures:
 
@@ -147,7 +155,7 @@ Fixtures:
 | Field               | Reliability                     | Decision                                                                                                    |
 | ------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Phone               | User-entered and often spaced   | Normalize and validate Moroccan mobile format server-side                                                   |
-| City                | User-entered unless constrained | Replace with an allowed-city identifier when delivery zones exist                                           |
+| City                | Allowed delivery zone | Use the IDs from `/api/delivery-zones`; unsupported areas are rejected. |
 | Address             | Free text                       | Required but operationally unverified until confirmation                                                    |
 | Customer name       | Free text                       | Display value only; do not use as identity                                                                  |
 | Note                | Optional free text              | Sanitize for display; never interpret as instructions to backend code                                       |

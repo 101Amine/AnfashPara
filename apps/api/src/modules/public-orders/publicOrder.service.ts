@@ -1,4 +1,5 @@
 // apps/api/src/modules/public-orders/publicOrder.service.ts
+import { resolveDeliveryZone } from '@para/core';
 import type { OrderWebhookPayload } from '../order-ingestion/orderWebhook.schema';
 import {
   ingestOrderWebhook,
@@ -12,6 +13,7 @@ const SOURCE = 'public-api';
 
 type StoredOrder = {
   cod_amount_centimes: number;
+  shipping_fee_customer_centimes: number;
   id: string;
   order_number: string;
 };
@@ -22,6 +24,8 @@ type StoredRequest = {
 
 export type PublicOrderResult = {
   codAmountCentimes: number;
+  shippingFeeCustomerCentimes: number;
+  itemsSubtotalCentimes: number;
   currency: 'MAD';
   duplicate: boolean;
   orderId: string;
@@ -54,16 +58,17 @@ export async function createPublicOrder(
     return toResult(existing.order, true);
   }
 
+  const delivery = resolveDeliveryZone(payload.customer.city);
   const ingestionPayload: OrderWebhookPayload = {
     eventId: idempotencyKey,
     order: {
       attribution: payload.attribution,
-      customer: payload.customer,
+      customer: { ...payload.customer, city: delivery.city },
       externalId,
       items: payload.items,
       orderNumber,
       placedAt: now.toISOString(),
-      shippingFeeCustomerCentimes: 0,
+      shippingFeeCustomerCentimes: delivery.feeCentimes,
     },
   };
 
@@ -114,7 +119,7 @@ async function loadExisting(
 async function loadOrder(database: D1Database, externalId: string): Promise<StoredOrder | null> {
   return database
     .prepare(
-      `SELECT id, order_number, cod_amount_centimes
+      `SELECT id, order_number, cod_amount_centimes, shipping_fee_customer_centimes
        FROM orders
        WHERE store_id = ? AND external_id = ?
        LIMIT 1`,
@@ -130,6 +135,8 @@ function assertSamePayload(storedPayload: string, requestPayload: string): void 
 function toResult(order: StoredOrder, duplicate: boolean): PublicOrderResult {
   return {
     codAmountCentimes: order.cod_amount_centimes,
+    shippingFeeCustomerCentimes: order.shipping_fee_customer_centimes,
+    itemsSubtotalCentimes: order.cod_amount_centimes - order.shipping_fee_customer_centimes,
     currency: 'MAD',
     duplicate,
     orderId: order.id,

@@ -1,5 +1,6 @@
 // apps/api/src/modules/public-orders/publicOrder.routes.ts
 import type { Context, Hono } from 'hono';
+import { DELIVERY_POLICY_VERSION, DELIVERY_ZONES, UnsupportedDeliveryZoneError } from '@para/core';
 
 import type { AppEnvironment } from '../../auth/cloudflareAccess';
 import { InsufficientStockError } from '../inventory/stockReservation.service';
@@ -18,7 +19,17 @@ export function registerPublicOrderRoutes(
   app: Hono<AppEnvironment>,
   rateLimiter: OrderRateLimiter = publicOrderRateLimiter,
 ): void {
+  app.get('/api/delivery-zones', (context) => {
+    context.header('Cache-Control', 'public, max-age=60');
+    return context.json({
+      currency: 'MAD',
+      policyVersion: DELIVERY_POLICY_VERSION,
+      freeDeliveryThresholdCentimes: null,
+      zones: DELIVERY_ZONES,
+    });
+  });
   app.post('/api/orders', async (context) => {
+    context.header('Cache-Control', 'private, no-store, max-age=0');
     if (!context.env.DB) return serviceUnavailable(context);
 
     const rateLimit = rateLimiter.consume(context.req.header('CF-Connecting-IP') ?? 'unknown');
@@ -96,6 +107,12 @@ export function registerPublicOrderRoutes(
       );
       return context.json(result, result.duplicate ? 200 : 201);
     } catch (error) {
+      if (error instanceof UnsupportedDeliveryZoneError) {
+        return context.json(
+          { error: { code: 'unsupported_delivery_zone', message: error.message } },
+          422,
+        );
+      }
       if (error instanceof InsufficientStockError) {
         return context.json({ error: { code: 'insufficient_stock', message: error.message } }, 409);
       }
